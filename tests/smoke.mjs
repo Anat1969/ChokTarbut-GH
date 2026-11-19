@@ -38,6 +38,9 @@ const MOCK = {
   },
 };
 
+// ענן מדומה לתמונות: היומן chok_images והדלי chok-images
+const cloud = [];
+
 const browser = await chromium.launch();
 const requests = [];
 
@@ -60,6 +63,15 @@ async function open(viewport) {
         : { definition: 'הגדרה אוטומטית.', mechanism: 'מנגנון אוטומטי.', example: 'דוגמה מהעיר.', domains: ['עיר'], family: 'contagion' };
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(out) });
   });
+  await page.route('**/functions/v1/chok-upload*', async (route) => {
+    const body = JSON.parse(route.request().postData() ?? '{}');
+    requests.push(`image-${body.mode}`);
+    const path = body.mode === 'upload' ? `${body.law_id}/${cloud.length}.jpg` : body.mode === 'restore' ? body.path : null;
+    cloud.unshift({ law_id: body.law_id, path });
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ law_id: body.law_id, path }) });
+  });
+  await page.route('**/rest/v1/chok_images*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(cloud) }));
+  await page.route('**/storage/v1/object/public/chok-images/**', (route) => route.fulfill({ contentType: 'image/png', body: TINY_PNG }));
   await page.route('**/auth/v1/settings', (route) =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify({ external: { google: false } }) }),
   );
@@ -78,7 +90,7 @@ const noSideScroll = async (page, name) => {
 
   await page.goto(BASE);
   await page.waitForSelector('[aria-label="הטבלה המחזורית של ההתנהגות"]');
-  assert.equal(await page.locator('button.tile').count(), 59, '59 אריחים: כל חוק בכל תחום שבו הוא נצפה');
+  assert.equal(await page.locator('button.tile').count(), 80, '80 אריחים: כל חוק בכל תחום שבו הוא נצפה');
   assert.equal(await page.locator('.pt-empty').count(), 7, '7 משבצות ריקות');
   const fits = await page.evaluate(() => {
     const t = document.querySelector('.ptable').getBoundingClientRect();
@@ -92,7 +104,7 @@ const noSideScroll = async (page, name) => {
   await page.locator('.pt-family', { hasText: 'גודל וסקייל' }).click();
   await page.waitForSelector('text=עיר גדולה אינה עיר קטנה מוגדלת');
   await page.getByRole('button', { name: 'רשת קשרים' }).click();
-  assert.equal(await page.locator('.map-node').count(), 30, '30 חוקים ברשת');
+  assert.equal(await page.locator('.map-node').count(), 41, '41 חוקים ברשת');
   await page.getByRole('button', { name: 'טבלה', exact: true }).click();
   // משבצת ריקה מובילה למחולל, עם יעד
   await page.getByRole('button', { name: 'משבצת ריקה: פרט מול כלל בספורט' }).click();
@@ -130,7 +142,7 @@ const noSideScroll = async (page, name) => {
   await page.getByLabel('תיאור התופעה').fill('למה הרחבת כביש לא פותרת את הפקק?');
   await page.getByRole('button', { name: 'הסבירי לי' }).click();
   await page.waitForSelector('text=חוק הביקוש המושרה');
-  assert.equal(await page.locator('mark.marker').count() > 0, true, 'מרקר בתשובת ה-AI');
+  await page.waitForSelector('mark.marker'); // מרקר בתשובת ה-AI
   await shot(page, 'explain-desktop');
   await page.getByRole('link', { name: 'צרי חוק חדש מהחוקים האלה' }).click();
 
@@ -156,19 +168,22 @@ const noSideScroll = async (page, name) => {
 
   await page.goto(`${BASE}/law/zipf-law`);
   await page.waitForSelector('h2:has-text("חוק זיפ")');
-  // מסגרת התמונה: תרשים עד שמודבקת תמונה, פרומפט להעתקה, ותמונה שנשמרת אחרי רענון
-  await page.waitForSelector('.frame svg.glyph');
+  // שתי מסגרות: הגרפיקה נשארת תמיד, והתמונה במקום משלה. התמונה נשמרת בענן ושורדת רענון
+  await page.waitForSelector('[data-slot="graphic"] svg.glyph');
+  await page.waitForSelector('[data-slot="image"].frame-empty');
   await page.getByRole('button', { name: 'הצגת הפרומפט' }).click();
   await page.waitForSelector('text=Documentary realism');
   await page.locator('input[type=file]').setInputFiles({ name: 't.png', mimeType: 'image/png', buffer: TINY_PNG });
-  await page.waitForSelector('.frame img');
+  await page.waitForSelector('text=התמונה נשמרה לתמיד בענן');
+  await page.waitForSelector('[data-slot="image"] img');
+  await page.waitForSelector('[data-slot="graphic"] svg.glyph'); // הגרפיקה לא נדרסה
   await page.reload();
-  await page.waitForSelector('.frame img');
-  await page.getByRole('button', { name: 'הסרת התמונה' }).click();
-  await page.getByRole('button', { name: 'כן, להסיר' }).click();
-  await page.waitForSelector('.frame svg.glyph');
+  await page.waitForSelector('[data-slot="image"] img');
+  await page.getByRole('button', { name: 'ריקון המסגרת' }).click();
+  await page.getByRole('button', { name: 'כן, לרוקן' }).click();
+  await page.waitForSelector('[data-slot="image"].frame-empty');
   await page.getByRole('button', { name: 'החזרת התמונה' }).click();
-  await page.waitForSelector('.frame img');
+  await page.waitForSelector('[data-slot="image"] img');
   // אימות באפליקציות אחרות
   await page.getByRole('button', { name: 'מצאי אפליקציות שמאמתות' }).click();
   await page.waitForSelector('a:has-text("אפליקציית בדיקה")');
@@ -180,7 +195,7 @@ const noSideScroll = async (page, name) => {
   await page.waitForSelector('input[type="email"]');
   await shot(page, 'menu-desktop');
 
-  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'correlations', 'create', 'draft', 'explain']);
+  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'correlations', 'create', 'draft', 'explain', 'image-clear', 'image-restore', 'image-upload']);
   assert.deepEqual(errors, [], 'אין שגיאות בדפדפן');
 }
 

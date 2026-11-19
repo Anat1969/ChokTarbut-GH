@@ -4,12 +4,26 @@ import { INITIAL_LAWS, getLawById } from '../data/laws';
 import { FAMILIES, FAMILY_BY_ID, FAMILY_OF, QUOTES } from '../data/families';
 import { EDGES, HUB } from '../lib/graph';
 import { useSavedLaws } from '../lib/store';
+import { useImageIds, useLawImage } from '../lib/images';
 import PeriodicTable, { EMPTY_CELLS, type Selection } from '../components/PeriodicTable';
 import LawMap from '../components/LawMap';
 import LawPortrait from '../components/LawPortrait';
 import FamilyCard from '../components/FamilyCard';
 import FamilyGlyph from '../components/FamilyGlyph';
 import type { Domain } from '../types';
+
+// אריח בגלריה: התמונה של חוק אחד
+function GalleryTile({ id }: { id: string }) {
+  const image = useLawImage(id);
+  const law = getLawById(id);
+  if (!law || !image.url) return null;
+  return (
+    <Link to={`/law/${id}`} className="card-link !p-0">
+      <img src={image.url} alt={law.name} loading="lazy" className="aspect-square w-full object-cover" />
+      <span className="block px-2 py-1.5 text-xs font-bold">{law.name}</span>
+    </Link>
+  );
+}
 
 const randomLaw = (): Selection => ({ type: 'law', id: INITIAL_LAWS[Math.floor(Math.random() * INITIAL_LAWS.length)].id });
 
@@ -25,6 +39,7 @@ export default function Home() {
   const [view, setView] = useState<'table' | 'net'>('table');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const saved = useSavedLaws();
+  const imageIds = useImageIds();
 
   useEffect(() => {
     if (touched || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -201,6 +216,20 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      {imageIds.length > 0 && (
+        <section className="px-4 pb-8 md:px-6">
+          <h2 className="h2">
+            <span className="marker">{imageIds.length}</span> חוקים כבר קיבלו תמונה.
+          </h2>
+          <p className="meta mb-3 mt-1">התמונות שמורות לתמיד בענן. לחיצה פותחת את החוק.</p>
+          <div className="grid grid-cols-3 gap-3 md:grid-cols-8">
+            {imageIds.map((id) => (
+              <GalleryTile key={id} id={id} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-8 bg-zinc-50 px-4 py-8 md:grid-cols-[1.618fr_1fr] md:px-6">
         <figure>

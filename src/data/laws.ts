@@ -1,8 +1,10 @@
 // מאגר חוקי התנהגות — Epoch 409
 // מקור: מגזין Epoch גיליון 409, נובמבר 2026
 // 11 חוקים שחולצו מתצלומי המגזין
+// אחריהם: 10 חוקי עיר ותרבות, ו-20 חוקים קלאסיים מהמאגר הראשוני (laws-classic.ts)
 
 import type { Domain, Law } from '../types';
+import { CLASSIC_LAWS } from './laws-classic';
 export type { Domain, Law, Example } from '../types';
 
 export const DOMAIN_COLORS: Record<Domain, string> = {
@@ -581,6 +583,9 @@ export const INITIAL_LAWS: Law[] = [
     created_by: 'system',
     tags: ['זמן', 'ארגון', 'בירוקרטיה', 'אילוץ'],
   },
+
+  // === 20 החוקים הקלאסיים מהמאגר הראשוני (src/data/laws-classic.ts) ===
+  ...CLASSIC_LAWS,
 ];
 
 export function getLawsByDomain(domain: Domain): Law[] {
