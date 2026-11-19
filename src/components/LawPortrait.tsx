@@ -94,12 +94,12 @@ export default function LawPortrait({ law, onSelect, brief = false, withImage = 
         <p className={`leading-relaxed ${brief ? 'text-sm' : 'text-lg'}`}>{law.definition}</p>
         </div>
         {brief && (
-          <div className="w-24 md:w-28">
+          <div className="w-24 shrink-0 md:w-44">
             <LawImage law={law} compact />
           </div>
         )}
         {withImage && !brief && (
-          <div className="w-40 md:w-60">
+          <div className="w-44 md:w-80">
             <LawImage law={law} />
           </div>
         )}

@@ -80,6 +80,19 @@ export const FAMILIES: Family[] = [
 ];
 
 export const FAMILY_OF: Record<string, FamilyId> = {
+  // חוקי Epoch 409
+  'incapacity-law': 'contagion',
+  'teaching-law': 'contagion',
+  'drift-law': 'contagion',
+  'chestertons-fence': 'swarm',
+  'longevity-paradox': 'scale',
+  'growth-law': 'scale',
+  'adaptation-law': 'limit',
+  'jazz-law': 'limit',
+  'talent-law': 'limit',
+  'inequality-law': 'skew',
+  'chance-law': 'skew',
+
   'information-cascade': 'contagion',
   'social-contagion': 'contagion',
   'minority-rule': 'contagion',
@@ -128,6 +141,17 @@ export interface CellKey {
 
 // שם קצר לכל חוק, לאריח בטבלה המחזורית
 export const SHORT_NAME: Record<string, string> = {
+  'longevity-paradox': 'אריכות',
+  'adaptation-law': 'הסתגלות',
+  'chestertons-fence': 'גדר',
+  'incapacity-law': 'ציות',
+  'inequality-law': 'אי־שוויון',
+  'teaching-law': 'הוראה',
+  'growth-law': 'צמיחה',
+  'jazz-law': "ג'אז",
+  'chance-law': 'סיכוי',
+  'talent-law': 'כישרון',
+  'drift-law': 'סחף',
   'peto-paradox': 'פטו',
   'naked-mole-rat-law': 'חולד',
   'human-performance-ceiling': 'תקרה',
@@ -211,3 +235,24 @@ export const QUOTES: Quote[] = [
 ];
 
 export const quoteOf = (lawId: string): Quote | undefined => QUOTES.find((q) => q.lawId === lawId);
+
+// קשרים בין חוקי Epoch 409 לחוקים הקלאסיים שעוסקים באותה תופעה.
+// הם מתווספים לרשת הקשרים, בלי לשנות את רשימת הקורלציות שענת הזינה לכל חוק.
+export const EXTRA_LINKS: Array<[string, string]> = [
+  ['longevity-paradox', 'peto-paradox'],
+  ['longevity-paradox', 'naked-mole-rat-law'],
+  ['longevity-paradox', 'kleiber-law'],
+  ['adaptation-law', 'human-performance-ceiling'],
+  ['adaptation-law', 'diminishing-returns'],
+  ['inequality-law', 'matthew-effect'],
+  ['inequality-law', 'pareto-principle'],
+  ['incapacity-law', 'information-cascade'],
+  ['incapacity-law', 'social-contagion'],
+  ['jazz-law', 'hebbs-law'],
+  ['teaching-law', 'hebbs-law'],
+  ['talent-law', 'skill-transfer'],
+  ['chance-law', 'matthew-effect'],
+  ['drift-law', 'social-contagion'],
+  ['growth-law', 'urban-scaling'],
+  ['chestertons-fence', 'tragedy-of-commons'],
+];

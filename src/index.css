@@ -259,7 +259,7 @@
 }
 .pt-empty {
   @apply flex w-full cursor-pointer items-center justify-center text-[11px] text-zinc-400 transition-all duration-150;
-  min-height: clamp(26px, calc((100vh - 262px) / 13), 54px);
+  min-height: clamp(24px, calc((100vh - 290px) / 18), 48px);
   background:
     repeating-linear-gradient(135deg, transparent 0 6px, rgba(0, 0, 0, 0.045) 6px 7px);
 }
@@ -290,8 +290,8 @@
 @media (min-width: 768px) {
   .tile {
     flex: 1 1 calc(50% - 2px);
-    /* 13 שורות אריחים ממלאות את גובה המסך */
-    --tile: clamp(30px, calc((100vh - 262px) / 13), 54px);
+    /* 18 שורות אריחים ממלאות את גובה המסך */
+    --tile: clamp(26px, calc((100vh - 290px) / 18), 48px);
     height: var(--tile);
     font-size: 13px;
     line-height: var(--tile);
@@ -503,4 +503,31 @@
 .pt-family:hover .pt-glyph,
 .pt-family[aria-pressed='true'] .pt-glyph {
   filter: invert(1);
+}
+
+/* שתי מסגרות: הגרפיקה קבועה, והתמונה במקום משלה */
+.frame-static {
+  cursor: default;
+}
+.frame-static:hover {
+  transform: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16), 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+.frame-empty {
+  display: grid;
+  place-items: center;
+  background: repeating-linear-gradient(135deg, #fafafa 0 8px, #f1f1f2 8px 9px);
+  box-shadow: inset 0 0 0 1px #e4e4e7;
+}
+.frame-hint {
+  padding: 4px 10px;
+  background: #fff;
+  font-size: 12px;
+  color: #52525b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.frame-empty:hover .frame-hint,
+.frame-empty.is-over .frame-hint {
+  background: var(--insight);
+  color: #000;
 }

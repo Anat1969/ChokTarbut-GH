@@ -8,31 +8,38 @@ import type { Law } from '../types';
 
 interface Props {
   law: Law;
-  compact?: boolean; // מסגרת קטנה, בלי כפתורים: לדיוקן הקצר
+  compact?: boolean; // בלי כפתורים: לדיוקן הקצר
 }
 
-// המסגרת של החוק: עד שמודבקת תמונה, מוצג תרשים המנגנון של המשפחה שלו.
+// שתי מסגרות זו ליד זו: הגרפיקה של המנגנון נשארת תמיד, והתמונה מקבלת מקום משלה.
 // העלאה היא גם הדבקה וגם גרירה: לחיצה, Ctrl+V, כפתור "הדבקה", או גרירת קובץ.
 export default function LawImage({ law, compact = false }: Props) {
-  const url = useLawImage(law.id);
+  const image = useLawImage(law.id);
   const prompt = promptOf(law.id);
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ text: string; bad?: boolean } | null>(null);
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
-  const [undo, setUndo] = useState<Blob | null>(null);
 
   const say = (text: string, bad = false) => setNote({ text, bad });
 
   const take = async (file: Blob | null | undefined) => {
-    if (!file) return say('לא נמצאה תמונה. העתיקי תמונה ונסי שוב, או גררי קובץ למסגרת.', true);
+    if (!file) return say('לא נמצאה תמונה. העתיקי תמונה ונסי שוב, או גררי קובץ למסגרת הריקה.', true);
+    setBusy(true);
     try {
-      await saveImage(law.id, file);
-      setUndo(null);
-      say('התמונה נשמרה במכשיר הזה.');
+      const where = await saveImage(law.id, file);
+      say(
+        where === 'cloud'
+          ? 'התמונה נשמרה לתמיד בענן, ומוצגת בכל מכשיר.'
+          : 'התמונה נשמרה במכשיר הזה בלבד. ההעלאה לענן נכשלה, ותנוסה שוב בכניסה הבאה.',
+        where !== 'cloud',
+      );
     } catch {
       say('הקובץ הזה אינו תמונה שאפשר לקרוא. נסי PNG או JPG.', true);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -40,7 +47,7 @@ export default function LawImage({ law, compact = false }: Props) {
     try {
       await take(await imageFromClipboard());
     } catch {
-      say('הדפדפן לא נתן גישה ללוח. לחצי על המסגרת ואז Ctrl+V, או גררי את הקובץ.', true);
+      say('הדפדפן לא נתן גישה ללוח. לחצי על המסגרת הריקה ואז Ctrl+V, או גררי את הקובץ.', true);
     }
   };
 
@@ -48,16 +55,25 @@ export default function LawImage({ law, compact = false }: Props) {
     if (!prompt) return;
     try {
       await navigator.clipboard.writeText(fullPrompt(prompt));
-      say('הפרומפט הועתק. הדביקי אותו במידג\'רני, ואת התמונה שתתקבל הדביקי כאן.');
+      say('הפרומפט הועתק. הדביקי אותו במידג\'רני, ואת התמונה שתתקבל הדביקי במסגרת הריקה.');
     } catch {
       setOpen(true);
       say('ההעתקה נחסמה. הפרומפט פתוח למטה, אפשר לסמן ולהעתיק.', true);
     }
   };
 
-  const frame = (
+  const graphic = (
+    <div className="frame frame-static" data-slot="graphic">
+      <div className="frame-mat">
+        <FamilyGlyph key={law.id} family={FAMILY_OF[law.id]} color={domainColor(law.domain[0])} animate className="h-full w-full" />
+      </div>
+    </div>
+  );
+
+  const slot = (
     <div
-      className={`frame ${over ? 'is-over' : ''}`}
+      className={`frame ${over ? 'is-over' : ''} ${image.url ? '' : 'frame-empty'}`}
+      data-slot="image"
       tabIndex={compact ? -1 : 0}
       role={compact ? undefined : 'button'}
       aria-label={compact ? undefined : `מסגרת התמונה של ${law.name}. לחיצה בוחרת קובץ, והדבקה מדביקה תמונה`}
@@ -86,21 +102,36 @@ export default function LawImage({ law, compact = false }: Props) {
         take(e.dataTransfer.files[0]);
       }}
     >
-      {url ? (
-        <img src={url} alt={prompt?.idea ?? law.name} />
+      {image.url ? (
+        <img src={image.url} alt={prompt?.idea ?? law.name} loading="lazy" />
       ) : (
-        <div className="frame-mat">
-          <FamilyGlyph key={law.id} family={FAMILY_OF[law.id]} color={domainColor(law.domain[0])} animate className="h-full w-full" />
-        </div>
+        <span className="frame-hint">{busy ? 'שומר...' : 'מקום לתמונה'}</span>
       )}
     </div>
   );
 
-  if (compact) return frame;
+  // בדיוקן הקצר: הגרפיקה תמיד, והתמונה רק אם כבר יש
+  if (compact) {
+    return (
+      <div className={`grid gap-2 ${image.url ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        {graphic}
+        {image.url && slot}
+      </div>
+    );
+  }
 
   return (
     <figure>
-      {frame}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          {graphic}
+          <p className="meta mt-1.5">הגרפיקה: תרשים המנגנון</p>
+        </div>
+        <div>
+          {slot}
+          <p className="meta mt-1.5">{image.url ? (image.local ? 'התמונה: במכשיר הזה בלבד' : 'התמונה: שמורה בענן') : 'התמונה: גרירה, הדבקה או לחיצה'}</p>
+        </div>
+      </div>
       <input
         ref={input}
         type="file"
@@ -121,24 +152,28 @@ export default function LawImage({ law, compact = false }: Props) {
         <button className="btn-primary btn-sm" onClick={copy}>
           העתקת הפרומפט
         </button>
-        <button className="btn-soft btn-sm" onClick={paste}>
+        <button className="btn-soft btn-sm" onClick={paste} disabled={busy}>
           הדבקת תמונה
         </button>
         <button className="btn-soft btn-sm" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
           {open ? 'הסתרת הפרומפט' : 'הצגת הפרומפט'}
         </button>
-        {url &&
+        {image.url &&
           (confirm ? (
             <>
               <button
                 className="btn btn-sm bg-red-600 text-white"
                 onClick={async () => {
-                  setUndo(await removeImage(law.id));
                   setConfirm(false);
-                  say('התמונה הוסרה.');
+                  try {
+                    await removeImage(law.id);
+                    say('המסגרת רוקנה. התמונה עצמה נשארת שמורה בענן.');
+                  } catch {
+                    say('ההסרה נכשלה, כי הענן לא זמין כרגע. נסי שוב בעוד דקה.', true);
+                  }
                 }}
               >
-                כן, להסיר
+                כן, לרוקן
               </button>
               <button className="btn-soft btn-sm" onClick={() => setConfirm(false)}>
                 ביטול
@@ -146,16 +181,19 @@ export default function LawImage({ law, compact = false }: Props) {
             </>
           ) : (
             <button className="btn-soft btn-sm" onClick={() => setConfirm(true)}>
-              הסרת התמונה
+              ריקון המסגרת
             </button>
           ))}
-        {undo && (
+        {image.previous && !image.url && (
           <button
             className="btn btn-sm bg-yellow-300"
             onClick={async () => {
-              await restoreImage(law.id, undo);
-              setUndo(null);
-              say('התמונה הוחזרה.');
+              try {
+                await restoreImage(law.id);
+                say('התמונה הוחזרה.');
+              } catch {
+                say('ההחזרה נכשלה, כי הענן לא זמין כרגע. נסי שוב בעוד דקה.', true);
+              }
             }}
           >
             החזרת התמונה
@@ -167,7 +205,6 @@ export default function LawImage({ law, compact = false }: Props) {
           {note.text}
         </p>
       )}
-      {!url && !note && <p className="meta mt-2">עד שתודבק תמונה, המסגרת מציגה את תרשים המנגנון של המשפחה. גרירה, הדבקה או לחיצה על המסגרת.</p>}
       {open && prompt && (
         <p className="mt-2 select-all bg-zinc-100 p-3 text-xs leading-relaxed" dir="rtl">
           {fullPrompt(prompt)}

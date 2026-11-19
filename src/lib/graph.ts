@@ -1,6 +1,7 @@
 // מפת הקשרים: פריסה קבועה של כל החוקים על שתי קשתות, מקובצים לפי תחום ראשי.
 // לכל חוק שורה משלו, כך שהשמות אף פעם לא עולים זה על זה.
 import { INITIAL_LAWS, ALL_DOMAINS } from '../data/laws';
+import { EXTRA_LINKS } from '../data/families';
 import type { Law } from '../types';
 
 export interface MapLayout {
@@ -32,8 +33,13 @@ export const EDGES: MapEdge[] = (() => {
   const ids = new Set(INITIAL_LAWS.map((l) => l.id));
   const seen = new Set<string>();
   const out: MapEdge[] = [];
-  for (const law of INITIAL_LAWS) {
-    for (const other of law.correlations) {
+  const pairs: Array<[string, string]> = [
+    ...INITIAL_LAWS.flatMap((law) => law.correlations.map((other): [string, string] => [law.id, other])),
+    ...EXTRA_LINKS,
+  ];
+  {
+    for (const [id, other] of pairs) {
+      const law = { id };
       if (!ids.has(other) || other === law.id) continue;
       const k = key(law.id, other);
       if (seen.has(k)) continue;
