@@ -1,6 +1,6 @@
 // chok-ai: שלושת מנועי ה-AI של "חוקי התנהגות", ונקודת הקצה לאפליקציות אחרות.
 //   explain       תופעה -> החוקים שמסבירים אותה
-//   create        2 עד 3 חוקים -> חוק חדש מהצומת ביניהם
+//   create        2 עד 3 חוקים -> חוק חדש מהצומת ביניהם (עם target: למשבצת ריקה בטבלה)
 //   correlations  חוק אחד -> קשרים מפתיעים לתחומים אחרים
 //   query         { context, domain? } -> { laws, explanation }  (POST /api/query-laws)
 // Gemini החינמי (GEMINI_API_KEY) קודם, Claude (ANTHROPIC_API_KEY) רק כגיבוי.
@@ -148,12 +148,16 @@ ${list}
 5. additional_examples: 2 דוגמאות לאותו מנגנון מתחומים אחרים מהתופעה. אחת מהן מהעיר, אם התופעה אינה עירונית.`
 }
 
-function createPrompt(parents: Record<string, unknown>[]): string {
+function createPrompt(parents: Record<string, unknown>[], target?: Record<string, unknown>): string {
+  // target: משבצת ריקה בטבלה המחזורית, שהחוק החדש אמור למלא
+  const goal = target
+    ? `\nהחוק החדש ממלא משבצת ריקה: משפחת המנגנון "${s(target.family, 40)}" (${s(target.rule, 200)}) בתחום "${s(target.domain, 20)}".\nהתחום הראשון ב-domain הוא "${s(target.domain, 20)}", והדוגמה הראשונה היא ממנו.\n`
+    : ''
   return `להלן ${parents.length} חוקי התנהגות קיימים:
 
 ${parents.map(lawText).join('\n\n---\n\n')}
 
-המשימה: נסח חוק חדש שנמצא בצומת בין החוקים האלה, וחושף משהו שאי אפשר לראות מכל אחד מהם לבד.
+המשימה: נסח חוק חדש שנמצא בצומת בין החוקים האלה, וחושף משהו שאי אפשר לראות מכל אחד מהם לבד.${goal}
 - name: שם קצר בעברית, עד 5 מילים. name_en: שם באנגלית.
 - definition: משפט אחד, עד 25 מילים, עם הבלטה אחת.
 - mechanism: עד 2 משפטים על המנגנון שמחבר את חוקי המקור.
@@ -211,7 +215,7 @@ Deno.serve(async (req) => {
     } else if (mode === 'create') {
       const parents = (Array.isArray(b.laws) ? b.laws : []).slice(0, 3) as Record<string, unknown>[]
       if (parents.length < 2) return json({ error: 'נדרשים לפחות שני חוקים' }, 400)
-      prompt = createPrompt(parents)
+      prompt = createPrompt(parents, b.target && typeof b.target === 'object' ? (b.target as Record<string, unknown>) : undefined)
       schema = SCHEMAS.create
     } else if (mode === 'correlations') {
       if (!b.law || typeof b.law !== 'object') return json({ error: 'חסר חוק' }, 400)

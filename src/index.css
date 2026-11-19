@@ -5,7 +5,7 @@
 @layer base {
   html {
     direction: rtl;
-    font-family: 'Heebo', system-ui, sans-serif;
+    font-family: 'IBM Plex Sans Hebrew', system-ui, sans-serif;
   }
   body {
     @apply bg-white text-black antialiased;
@@ -151,5 +151,230 @@
   * {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+/* ---------- תעודת DNA: טבלה מחזורית על נייר מעבדה ---------- */
+:root {
+  --ink: #111;
+  --paper: #fff;
+  --cell: #f4f4f5;
+  --insight: #fde047;
+  --problem: #b91c1c;
+  --solution: #15803d;
+  /* סולם טיפוגרפי לפי חתך הזהב: 16, 20, 26, 42 */
+  --fs-h1: clamp(1.75rem, 1.1rem + 1.9vw, 2.625rem);
+  --fs-h2: 1.625rem;
+  --fs-h3: 1.25rem;
+}
+.h1,
+.h2 {
+  text-wrap: balance;
+}
+.h1 {
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+}
+.h2 {
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.num {
+  font-family: 'IBM Plex Mono', 'IBM Plex Sans Hebrew', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* שלוש קופסאות המשמעות: בעיה, פתרון, תובנה */
+.box {
+  padding: 8px 10px;
+  background: var(--cell);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.box b {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+}
+.box-problem {
+  box-shadow: inset -3px 0 0 var(--problem);
+}
+.box-problem b {
+  color: var(--problem);
+}
+.box-solution {
+  box-shadow: inset -3px 0 0 var(--solution);
+}
+.box-solution b {
+  color: var(--solution);
+}
+.box-insight {
+  background: #fef9c3;
+  box-shadow: inset -3px 0 0 #eab308;
+}
+
+/* הטבלה המחזורית */
+.ptable {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+}
+@media (min-width: 768px) {
+  .ptable {
+    grid-template-columns: 124px repeat(6, minmax(0, 1fr));
+  }
+}
+.pt-head {
+  @apply cursor-pointer select-none px-1.5 py-1 text-center text-xs font-semibold transition-all duration-150;
+  background: var(--paper);
+}
+.pt-head:hover {
+  background: var(--cell);
+}
+.pt-family {
+  @apply col-span-6 cursor-pointer select-none px-2 py-1.5 text-right transition-all duration-150 md:col-span-1;
+  background: var(--paper);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.pt-family:hover,
+.pt-family[aria-pressed='true'] {
+  background: var(--ink);
+  color: #fff;
+}
+.pt-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 3px;
+  min-height: 44px;
+  padding: 3px;
+  background: var(--cell);
+  transition: background 0.2s;
+}
+.pt-cell.is-row {
+  background: #e4e4e7;
+}
+.pt-empty {
+  @apply flex w-full cursor-pointer items-center justify-center text-[11px] text-zinc-400 transition-all duration-150;
+  min-height: clamp(26px, calc((100vh - 262px) / 13), 54px);
+  background:
+    repeating-linear-gradient(135deg, transparent 0 6px, rgba(0, 0, 0, 0.045) 6px 7px);
+}
+.pt-empty:hover,
+.pt-empty[aria-pressed='true'] {
+  background: var(--insight);
+  color: #000;
+  font-weight: 600;
+}
+.tile {
+  position: relative;
+  flex: 1 1 100%;
+  height: 26px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 26px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.25s;
+  animation: settle 0.5s backwards;
+  animation-delay: calc(var(--i, 0) * 12ms);
+}
+@media (min-width: 768px) {
+  .tile {
+    flex: 1 1 calc(50% - 2px);
+    /* 13 שורות אריחים ממלאות את גובה המסך */
+    --tile: clamp(30px, calc((100vh - 262px) / 13), 54px);
+    height: var(--tile);
+    font-size: 13px;
+    line-height: var(--tile);
+  }
+}
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.22);
+}
+.tile.is-sel {
+  outline: 2px solid #000;
+  outline-offset: 1px;
+  z-index: 2;
+}
+.tile.is-dim {
+  opacity: 0.18;
+}
+.tile.is-mine {
+  background: var(--insight);
+  color: #000;
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* שכבת מוזיאון */
+.quote {
+  font-size: 1.25rem;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.haiku {
+  font-size: 1.25rem;
+  line-height: 1.7;
+  font-weight: 300;
+}
+.card-link {
+  @apply block cursor-pointer bg-white p-4 text-right transition-all duration-150;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+}
+.card-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
+}
+
+@media print {
+  .topbar,
+  .btn,
+  nav {
+    display: none !important;
+  }
+  .page {
+    padding-top: 0;
+  }
+}
+
+/* דף הבית: בנייד המוקד בא מיד אחרי המסר, ובמחשב טור הצד מימין והמוקד משמאל */
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 768px) {
+  .home-grid {
+    grid-template-columns: 38.2fr 61.8fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .home-intro {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .home-detail {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .home-stage {
+    grid-column: 2;
+    grid-row: 1 / span 2;
   }
 }

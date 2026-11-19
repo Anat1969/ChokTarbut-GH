@@ -75,7 +75,7 @@ export default function MyLaws({ user }: { user: User | null }) {
 
   return (
     <main className="page px-4 py-5 md:px-6">
-      <h1 className="text-2xl font-black leading-tight">
+      <h1 className="h2">
         <span className="marker">{created.length}</span> חוקים שיצרת, ו-<span className="marker">{marked.length}</span> שסימנת.
       </h1>
       <p className="meta mt-1">

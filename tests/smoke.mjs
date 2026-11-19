@@ -66,18 +66,43 @@ const noSideScroll = async (page, name) => {
   const { page, errors } = await open({ width: 1440, height: 900 });
 
   await page.goto(BASE);
-  await page.waitForSelector('svg[aria-label="מפת הקשרים בין החוקים"]');
-  assert.equal(await page.locator('.map-node').count(), 30, '30 חוקים במפה');
-  const fits = await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1);
-  assert.ok(fits, 'דף הבית בגודל המסך, בלי גלילה');
-  await page.locator('.map-node', { hasText: 'מספר דנבר' }).click();
+  await page.waitForSelector('[aria-label="הטבלה המחזורית של ההתנהגות"]');
+  assert.equal(await page.locator('button.tile').count(), 59, '59 אריחים: כל חוק בכל תחום שבו הוא נצפה');
+  assert.equal(await page.locator('.pt-empty').count(), 7, '7 משבצות ריקות');
+  const fits = await page.evaluate(() => {
+    const t = document.querySelector('.ptable').getBoundingClientRect();
+    return t.bottom <= window.innerHeight && t.left >= 0;
+  });
+  assert.ok(fits, 'הטבלה כולה בתוך המסך הראשון');
+  await page.locator('button.tile', { hasText: 'דנבר' }).first().click();
   await page.waitForSelector('article h2:has-text("מספר דנבר")');
+  assert.ok((await page.locator('button.tile.is-dim').count()) > 20, 'חוקים לא קשורים מעומעמים');
   await shot(page, 'home-desktop');
-  await page.getByRole('button', { name: /^עיר/ }).click();
-  await shot(page, 'home-filter');
+  await page.getByRole('button', { name: /^גודל וסקייל/ }).click();
+  await page.waitForSelector('text=עיר גדולה אינה עיר קטנה מוגדלת');
+  await page.getByRole('button', { name: 'רשת קשרים' }).click();
+  assert.equal(await page.locator('.map-node').count(), 30, '30 חוקים ברשת');
+  await page.getByRole('button', { name: 'טבלה', exact: true }).click();
+  // משבצת ריקה מובילה למחולל, עם יעד
+  await page.getByRole('button', { name: 'משבצת ריקה: פרט מול כלל בספורט' }).click();
+  await shot(page, 'home-cell');
+  await page.getByRole('link', { name: 'מלאי את המשבצת' }).click();
+  await page.waitForURL('**/create?family=dilemma*');
+  assert.equal(await page.locator('button.row[aria-pressed="true"]').count(), 2, 'שני חוקי מקור נבחרו מראש');
+  // ניסוח ידני
+  await page.getByRole('button', { name: 'אני מנסחת' }).click();
+  await page.getByPlaceholder('עד חמש מילים').fill('חוק ידני');
+  await page.getByPlaceholder('משפט אחד').fill('הגדרה ידנית של חוק.');
+  await page.getByRole('button', { name: 'שמרי בחוקים שלי' }).click();
+  await page.waitForSelector('text="חוק ידני" נשמר');
+  await shot(page, 'create-manual');
+  await page.goto(BASE);
+  await page.waitForSelector('.tile.is-mine:has-text("חוק ידני")');
+  assert.equal(await page.locator('.pt-empty').count(), 6, 'המשבצת התמלאה');
 
   await page.getByRole('link', { name: 'גלה', exact: true }).first().click();
   await page.waitForURL('**/library');
+  await page.waitForSelector('h2:has-text("הדבקה וסף")'); // ברירת המחדל: לפי משפחת מנגנון
   await page.getByRole('button', { name: 'לפי חוזק ראיות' }).click();
   await page.locator('button.row', { hasText: 'פרדוקס בראס' }).click();
   await page.waitForSelector('article h2:has-text("פרדוקס בראס")');
@@ -107,6 +132,7 @@ const noSideScroll = async (page, name) => {
   await page.waitForSelector('h3:has-text("פרדוקס בראס")');
   await page.reload();
   await page.waitForSelector('h3:has-text("חוק בדיקה")'); // נשמר אחרי רענון
+  await page.waitForSelector('h3:has-text("חוק ידני")');
   await shot(page, 'mylaws-desktop');
   // מחיקה: אישור לפני, וביטול אחרי
   await page.locator('li', { hasText: 'חוק בדיקה' }).getByRole('button', { name: 'מחיקה' }).click();

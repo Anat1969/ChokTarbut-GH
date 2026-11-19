@@ -32,8 +32,9 @@ export async function explainPhenomenon(phenomenon: string): Promise<ExplainResu
   };
 }
 
-export function createNewLaw(parents: Law[]): Promise<CreateLawResult> {
-  return call<CreateLawResult>({ mode: 'create', laws: parents.map(brief) });
+// target: משבצת ריקה בטבלה שהחוק החדש אמור למלא (תחום ומשפחת מנגנון)
+export function createNewLaw(parents: Law[], target?: { domain: string; family: string; rule: string }): Promise<CreateLawResult> {
+  return call<CreateLawResult>({ mode: 'create', laws: parents.map(brief), target });
 }
 
 export function findCorrelations(law: Law): Promise<CorrelationResult> {
