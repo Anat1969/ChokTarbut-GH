@@ -13,68 +13,67 @@
 3. **צור** — חיבור 2+ חוקים → חוק חדש / בין-תחומי
 
 ## Stack
-- React (Vite) + TypeScript
-- Tailwind CSS
-- Supabase (Postgres + Auth + Edge Functions)
-- Claude API (anthropic SDK) — 3 prompt types
-- Vercel (deployment)
+- React (Vite) + TypeScript, Tailwind CSS
+- Supabase: הפרויקט המשותף `ktqmwpbzcnzkhjskqisy`. כל הטבלאות עם הקידומת `chok_`, ו-RLS על כולן
+- AI: פונקציית Edge אחת, `chok-ai`. Gemini החינמי קודם, Claude כגיבוי. המפתחות רק בסודות של Supabase
+- Vercel: הפרויקט `chok-tarbut`, ענף הייצור `main`. כתובת: https://chok-tarbut.vercel.app
 
-## כללי עיצוב (ענת-standards)
-- RTL, עברית בלבד
-- לבן + שחור + צבע עם תפקיד בלבד
-- סרגל עליון קבוע — שם האפליקציה = לינק לבית
-- כפתורים מרובעים (border-radius: 0)
-- Google Login ישיר (ללא שלב ביניים)
-- אין אייקונים דקורטיביים
-- 6 תחומים עם צבע קבוע:
-  - ביולוגיה: #2D6A4F (ירוק כהה)
-  - חברה: #1D3557 (כחול כהה)
-  - ספורט: #E63946 (אדום)
-  - עיר: #457B9D (כחול-אפור)
-  - תרבות: #6A0572 (סגול)
-  - כלכלה: #F4A261 (כתום)
+## כללי עיצוב (anat-standards)
+- RTL, עברית בלבד, בלי אייקונים
+- לבן, אוויר ושחור. צבע רק עם תפקיד: צבע תחום, מרקר צהוב לתובנה, אדום לבעיה
+- סרגל עליון קבוע. שם האפליקציה מקשר לבית. כפתור תפריט אחד מחזיק כניסה ויציאה
+- כפתורים מרובעים, בלי קו מסגרת: הצורה נקראת מהרקע, מהצל ומהתנועה (`.btn` ב-`src/index.css`)
+- כל מסך בגודל המסך, בשני טורים ביחס זהוב (38.2 / 61.8). הגלילה בתוך הטורים, לא בדף
+- המוקד הקבוע: **מפת הקשרים**. היא חוזרת בבית, במסך החוק ובמסך ההסבר, והתוכן שלה משתנה
+- 6 תחומים עם צבע קבוע (`DOMAIN_COLORS` ב-`src/data/laws.ts`). הטקסט על כתום הכלכלה שחור:
+  - ביולוגיה: #2D6A4F, חברה: #1D3557, ספורט: #E63946, עיר: #457B9D, תרבות: #6A0572, כלכלה: #F4A261
+- כל טקסט שה-AI כותב: שורת תובנה עד 8 מילים, `**מילה**` מוצגת כמרקר (`RichText`), ושורת "נוסח בידי AI"
 
 ## מבנה מסכים
-1. `/` — בית: 3 כפתורי כניסה (גלה / הסבר / צור)
-2. `/library` — ספריית כל החוקים, פילטור לפי תחום
-3. `/law/:id` — מסך חוק בודד (הגדרה, דוגמאות, קורלציות)
-4. `/explain` — מסביר תופעות: שדה טקסט → חוקים רלוונטיים
-5. `/create` — מחולל חוקים חדשים
-6. `/my-laws` — ארכיון חוקים שענת יצרה / סימנה
+1. `/` בית: המסר, שלושת המנועים, דיוקן חוק שמתחלף, ומפת הקשרים
+2. `/library` ספרייה: חיפוש, סינון לפי תחום, מיון בשלוש דרכים. בחירה פותחת את החוק במקום
+3. `/law/:id` חוק בודד: דיוקן מלא לצד המפה
+4. `/explain` הסבר תופעה: AI, ובגיבוי התאמה מקומית (`src/lib/match.ts`)
+5. `/create` מחולל חוקים: 2 עד 3 חוקים הופכים לחוק חדש
+6. `/my-laws` חוקים שענת יצרה או סימנה
 
 ## מבנה DB (Supabase)
-### טבלת laws
-- id, name, domain[], definition, mechanism, examples (jsonb), evidence_strength (1-5), correlations (id[]), source, created_by, tags[]
+- `chok_laws`: מאגר החוקים. קריאה ציבורית, בלי כתיבה מהלקוח. המקור הוא `src/data/laws.ts`
+- `chok_user_laws`: חוקים שנוצרו או סומנו (`kind`: created / marked). RLS לפי `auth.uid()`
+- `chok_explanations`: תופעות שהוסברו. RLS לפי `auth.uid()`
+- "החוקים שלי" נשמרים קודם במכשיר (`src/lib/store.ts`), ומסתנכרנים לענן אחרי כניסה
 
-### טבלת explanations
-- id, user_id, phenomenon, matched_laws (id[]), explanation, created_at
+## AI: פונקציית `chok-ai`
+ההנחיות למודל נמצאות בפונקציה, לא בלקוח. הלקוח שולח רק קלט מוגבל באורך (`src/lib/ai.ts`).
+1. `explain`: תופעה אל החוקים שמסבירים אותה
+2. `create`: 2 עד 3 חוקים אל חוק חדש
+3. `correlations`: חוק אחד אל קשרים מפתיעים
+4. `query`: נקודת הקצה לאפליקציות אחרות
 
-### טבלת user_laws
-- id, user_id, name, definition, parent_laws (id[]), creation_note, created_at
-
-## Claude API — 3 Prompt Types
-1. **explain_phenomenon** → `src/lib/prompts/explain.ts`
-2. **find_correlations** → `src/lib/prompts/correlations.ts`
-3. **create_new_law** → `src/lib/prompts/create.ts`
+## כניסה
+- Google כבוי בפרויקט Supabase (נבדק ב-`/auth/v1/settings`). האפליקציה בודקת זאת בזמן ריצה:
+  כש-Google יופעל, כפתור "כניסה עם Google" יופיע לבד, ועד אז הכניסה באימייל וסיסמה של חשבון קיים
+- האפליקציה עובדת במלואה גם בלי כניסה
 
 ## סטטוס בנייה
 - [x] אפיון מלא
-- [x] מאגר חוקים ראשוני (13 חוקים מ-Epoch + 20 קלאסיים)
-- [ ] UI — בית + ספרייה
-- [ ] מסך חוק בודד
-- [ ] חיבור Claude API
-- [ ] Auth (Google)
-- [ ] Deploy לVercel
+- [x] מאגר חוקים: 30 (11 מ-Epoch 409, ו-19 קלאסיים). 8 מהם חוקי עיר
+- [x] UI: בית, ספרייה, חוק בודד, הסבר, צור, החוקים שלי
+- [x] מפת הקשרים
+- [x] חיבור AI (Gemini, Claude כגיבוי)
+- [x] כניסה ושמירה בענן
+- [x] Deploy ל-Vercel
+- [ ] הפעלת Google Login בפרויקט Supabase (הגדרה בלוח הבקרה)
+- [ ] הקלדת חוק חדש ידנית, בלי AI
 
 ## פקודות שימושיות
 ```bash
 npm run dev          # הרצה מקומית
 npm run build        # בנייה לייצור
-npx supabase start   # Supabase מקומי
-npx supabase db push # העלאת migrations
+npm test             # בדיקת Playwright מול vite preview (פורט 4173)
 ```
 
 ## חיבור לאפליקציות אחרות של ענת
-API endpoint: `POST /api/query-laws`
+API endpoint: `POST https://chok-tarbut.vercel.app/api/query-laws`
 Body: `{ context: string, domain?: string }`
-Returns: `{ laws: Law[], explanation: string }`
+Returns: `{ laws: Law[], explanation: string, insight: string }`

@@ -7,78 +7,149 @@
     direction: rtl;
     font-family: 'Heebo', system-ui, sans-serif;
   }
-
   body {
     @apply bg-white text-black antialiased;
   }
-
-  * {
-    box-sizing: border-box;
+  :focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
   }
 }
 
 @layer components {
-  /* כפתורים מרובעים — anat-standards */
+  /* כפתורים: מרובעים, בלי קו מסגרת. הצורה נקראת מהרקע, מהצל ומהתנועה */
   .btn {
-    @apply inline-flex items-center justify-center px-6 py-3 font-medium text-sm
-           transition-all duration-150 cursor-pointer select-none
-           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium
+           cursor-pointer select-none transition-all duration-150;
     border-radius: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
   }
-
+  .btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
+  }
+  .btn:disabled {
+    @apply cursor-not-allowed opacity-40;
+  }
   .btn-primary {
-    @apply btn bg-black text-white hover:bg-zinc-800 active:bg-zinc-900;
+    @apply btn bg-black text-white;
+  }
+  .btn-soft {
+    @apply btn bg-zinc-100 text-black;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
   }
 
-  .btn-secondary {
-    @apply btn bg-white text-black border border-black hover:bg-zinc-50;
+  /* שורת פריט לחיצה ברשימה */
+  .row {
+    @apply block w-full cursor-pointer bg-white px-3 py-2.5 text-right transition-colors duration-150;
+  }
+  .row:hover {
+    @apply bg-zinc-100;
+  }
+  .row[aria-pressed='true'],
+  .row[aria-current='true'] {
+    @apply bg-zinc-100;
+    box-shadow: inset -3px 0 0 #000;
   }
 
-  .btn-ghost {
-    @apply btn bg-transparent text-black hover:bg-zinc-100;
+  .label {
+    @apply text-xs font-medium text-zinc-500;
   }
-
-  /* כרטיס חוק */
-  .law-card {
-    @apply bg-white border border-zinc-200 p-5 cursor-pointer
-           hover:border-black hover:shadow-sm transition-all duration-150;
+  .meta {
+    @apply text-xs text-zinc-400;
   }
-
-  /* תג תחום */
-  .domain-badge {
-    @apply inline-block px-2 py-0.5 text-xs font-medium text-white;
-  }
-
-  /* כותרת מקטע */
-  .section-title {
-    @apply text-2xl font-bold tracking-tight;
-  }
-
-  /* שדה קלט */
   .input {
-    @apply w-full border border-zinc-300 px-4 py-3 text-sm
-           focus:outline-none focus:border-black transition-colors;
+    @apply w-full bg-zinc-50 px-3 py-2.5 text-sm transition-shadow;
     border-radius: 0;
+    box-shadow: inset 0 0 0 1px #d4d4d8;
+  }
+  .input:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px #000;
+  }
+
+  /* מרקר צהוב: תובנה */
+  .marker {
+    background: linear-gradient(transparent 55%, #fde047 55%);
+    padding: 0 2px;
+    font-weight: 700;
+  }
+  .problem {
+    @apply text-red-700;
+  }
+  .solution {
+    @apply text-green-700;
   }
 }
 
-/* סרגל עליון */
+/* סרגל עליון קבוע */
 .topbar {
   position: fixed;
-  top: 0;
-  right: 0;
-  left: 0;
+  inset: 0 0 auto 0;
   z-index: 50;
-  height: 56px;
-  background: white;
-  border-bottom: 1px solid #e4e4e7;
-  display: flex;
-  align-items: center;
-  padding: 0 1.5rem;
+  background: #fff;
+  box-shadow: 0 1px 0 #e4e4e7;
+}
+.page {
+  padding-top: var(--bar);
+  min-height: 100vh;
+}
+:root {
+  --bar: 88px;
+}
+@media (min-width: 768px) {
+  :root {
+    --bar: 52px;
+  }
+  /* מסך בגודל המסך: הגלילה בתוך הטורים, לא בדף */
+  .screen {
+    height: calc(100vh - var(--bar));
+    overflow: hidden;
+  }
+  .scroll-y {
+    overflow-y: auto;
+    min-height: 0;
+  }
 }
 
-/* תוכן מתחת לסרגל */
-.page-content {
-  padding-top: 56px;
-  min-height: 100vh;
+/* מפת הקשרים */
+.map-edge {
+  fill: none;
+  stroke: #d4d4d8;
+  stroke-width: 1;
+  transition: stroke 0.25s, opacity 0.25s, stroke-width 0.25s;
+}
+.map-node {
+  cursor: pointer;
+  outline: none;
+  transition: opacity 0.25s;
+}
+.map-node text {
+  font-size: 17px;
+  fill: #18181b;
+  transition: font-weight 0.2s;
+}
+.map-node:hover text,
+.map-node.is-on text {
+  font-weight: 700;
+}
+.map-node:focus-visible text {
+  font-weight: 700;
+  text-decoration: underline;
+}
+.map-node.is-dim,
+.map-edge.is-dim {
+  opacity: 0.16;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
 }
