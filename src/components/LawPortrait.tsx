@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getLawById } from '../data/laws';
 import { NEIGHBORS } from '../lib/graph';
-import { findCorrelations } from '../lib/ai';
+import { findCorrelations, findApps, type AppEvidence } from '../lib/ai';
+import LawImage from './LawImage';
 import { saveLaw, removeLaw, isMarked, newId, useSavedLaws } from '../lib/store';
 import DomainBadge, { domainColor } from './DomainBadge';
 import Evidence from './Evidence';
@@ -15,15 +16,18 @@ interface Props {
   law: Law;
   onSelect?: (id: string) => void; // בחירת חוק קשור: במקום, בלי לעזוב את המסך
   brief?: boolean; // דיוקן קצר, לדף הבית
+  withImage?: boolean; // מסגרת התמונה בתוך הדיוקן (כשאין לה מקום משלה במסך)
 }
 
 // דיוקן של חוק בהקשר: מה הוא אומר, איך הוא פועל, איפה הוא מופיע, ולמה הוא קשור
-export default function LawPortrait({ law, onSelect, brief = false }: Props) {
+export default function LawPortrait({ law, onSelect, brief = false, withImage = false }: Props) {
   const navigate = useNavigate();
   useSavedLaws();
   const marked = isMarked(law.id);
   const [ai, setAi] = useState<{ id: string; data?: CorrelationResult; error?: string; loading?: boolean } | null>(null);
   const aiState = ai?.id === law.id ? ai : null;
+  const [apps, setApps] = useState<{ id: string; data?: AppEvidence; error?: string; loading?: boolean } | null>(null);
+  const appsState = apps?.id === law.id ? apps : null;
   const neighbors = NEIGHBORS[law.id].map(getLawById).filter((l): l is Law => Boolean(l));
 
   const family = familyOf(law.id);
@@ -53,6 +57,15 @@ export default function LawPortrait({ law, onSelect, brief = false }: Props) {
     });
   };
 
+  const verify = async () => {
+    setApps({ id: law.id, loading: true });
+    try {
+      setApps({ id: law.id, data: await findApps(law) });
+    } catch {
+      setApps({ id: law.id, error: 'ה-AI לא זמין כרגע, ולכן לא נמצאו אפליקציות מאמתות. נסי שוב בעוד דקה.' });
+    }
+  };
+
   const discover = async () => {
     setAi({ id: law.id, loading: true });
     try {
@@ -63,20 +76,34 @@ export default function LawPortrait({ law, onSelect, brief = false }: Props) {
   };
 
   return (
-    <article>
-      <div className="mb-2 flex flex-wrap items-center gap-1.5">
-        {law.domain.map((d) => (
-          <DomainBadge key={d} domain={d} />
-        ))}
-        <Evidence value={law.evidence_strength} showLabel={!brief} />
+    <article key={law.id} className="rise">
+      <div className={brief || withImage ? 'grid grid-cols-[1fr_auto] items-start gap-4' : ''}>
+        <div className="min-w-0">
+        <div className="mb-2 flex flex-wrap items-center gap-1.5">
+          {law.domain.map((d) => (
+            <DomainBadge key={d} domain={d} />
+          ))}
+          <Evidence value={law.evidence_strength} showLabel={!brief} />
+        </div>
+        <h2 className={brief ? 'h2' : 'h1'}>{law.name}</h2>
+        {law.name_en && (
+          <p className="meta mb-3" dir="ltr" style={{ textAlign: 'right' }}>
+            {law.name_en}
+          </p>
+        )}
+        <p className={`leading-relaxed ${brief ? 'text-sm' : 'text-lg'}`}>{law.definition}</p>
+        </div>
+        {brief && (
+          <div className="w-24 md:w-28">
+            <LawImage law={law} compact />
+          </div>
+        )}
+        {withImage && !brief && (
+          <div className="w-40 md:w-60">
+            <LawImage law={law} />
+          </div>
+        )}
       </div>
-      <h2 className={brief ? 'h2' : 'h1'}>{law.name}</h2>
-      {law.name_en && (
-        <p className="meta mb-3" dir="ltr" style={{ textAlign: 'right' }}>
-          {law.name_en}
-        </p>
-      )}
-      <p className={`leading-relaxed ${brief ? 'text-sm' : 'text-lg'}`}>{law.definition}</p>
 
       {brief && (
         <p className="mt-3 grid grid-cols-[72px_1fr] items-baseline gap-3 text-sm">
@@ -176,6 +203,51 @@ export default function LawPortrait({ law, onSelect, brief = false }: Props) {
           </>
         )}
       </div>
+
+      {!brief && (
+        <section className="mt-5">
+          <h3 className="label mb-1.5">אימות: איפה אפשר לבדוק את החוק באפליקציות שלך</h3>
+          {!appsState?.data && (
+            <button onClick={verify} disabled={appsState?.loading} className="btn-soft">
+              {appsState?.loading ? 'מחפש בתיק האפליקציות...' : 'מצאי אפליקציות שמאמתות'}
+            </button>
+          )}
+          {appsState?.error && <p className="problem mt-2 text-sm">{appsState.error}</p>}
+          {appsState?.data && (
+            <div className="rise bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,.12)]" aria-live="polite">
+              {appsState.data.picks.length === 0 ? (
+                <p className="text-sm text-zinc-600">לא נמצאה בתיק אפליקציה שהנתונים שלה בודקים את החוק הזה.</p>
+              ) : (
+                <>
+                  <p className="mb-3 text-base font-bold">
+                    <RichText text={appsState.data.insight} />
+                  </p>
+                  <ol className="space-y-3">
+                    {appsState.data.picks.map((p, n) => (
+                      <li key={p.id} className="grid grid-cols-[20px_1fr] gap-2 text-sm">
+                        <span className="num pt-0.5 text-zinc-400">{n + 1}</span>
+                        <span>
+                          <a href={p.url} target="_blank" rel="noreferrer" className="font-bold underline decoration-2 underline-offset-2">
+                            {p.title}
+                          </a>
+                          <span className="block leading-relaxed text-zinc-700">
+                            <RichText text={p.proves} />
+                          </span>
+                          <span className="mt-0.5 block leading-relaxed">
+                            <span className="label text-green-700">הבדיקה: </span>
+                            <RichText text={p.experiment} />
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </>
+              )}
+              <p className="meta mt-3">הצעה של AI לפי שם האפליקציה והתיאור שלה. הבדיקה עצמה עוד לא נעשתה.</p>
+            </div>
+          )}
+        </section>
+      )}
 
       {aiState?.error && <p className="problem mt-3 text-sm">{aiState.error}</p>}
       {aiState?.data && (

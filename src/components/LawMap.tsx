@@ -9,10 +9,11 @@ interface Props {
   domain?: Domain | null;
   onSelect: (id: string) => void;
   className?: string;
+  narrow?: boolean; // פריסה צרה גם במחשב, כשהמפה מקבלת טור צר
 }
 
 // מפת הקשרים: כל חוק הוא נקודה בצבע התחום הראשי שלו, וכל קו הוא קורלציה.
-export default function LawMap({ selectedId, highlightIds, domain, onSelect, className = '' }: Props) {
+export default function LawMap({ selectedId, highlightIds, domain, onSelect, className = '', narrow: forceNarrow = false }: Props) {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 767px)').matches);
   useEffect(() => {
@@ -21,7 +22,7 @@ export default function LawMap({ selectedId, highlightIds, domain, onSelect, cla
     mq.addEventListener('change', on);
     return () => mq.removeEventListener('change', on);
   }, []);
-  const layout = narrow ? NARROW : WIDE;
+  const layout = narrow || forceNarrow ? NARROW : WIDE;
   const NODE_BY_ID = layout.byId;
   const focusId = hoverId ?? selectedId ?? null;
   const marked = new Set(highlightIds ?? []);

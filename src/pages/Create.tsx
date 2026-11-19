@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ALL_DOMAINS, INITIAL_LAWS, getLawById } from '../data/laws';
 import { FAMILIES, FAMILY_BY_ID, FAMILY_OF, type FamilyId } from '../data/families';
 import { ORDERED, NEIGHBORS } from '../lib/graph';
-import { createNewLaw } from '../lib/ai';
+import { createNewLaw, draftLaw } from '../lib/ai';
 import { saveLaw, newId } from '../lib/store';
 import DomainFilter from '../components/DomainFilter';
 import DomainBadge, { domainColor, domainInk } from '../components/DomainBadge';
@@ -119,6 +119,29 @@ export default function Create() {
       created_at: new Date().toISOString(),
     });
     setSaved(true);
+  };
+
+  // ניסוח אוטומטי: ה-AI ממלא רק שדות ריקים, ומה שענת כתבה נשאר
+  const [drafting, setDrafting] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const autoDraft = async () => {
+    setDrafting(true);
+    setDraftError(null);
+    try {
+      const d = await draftLaw(draft.name.trim(), selected.map((l) => l.name));
+      setDraft((cur) => ({
+        ...cur,
+        definition: cur.definition || d.definition,
+        mechanism: cur.mechanism || d.mechanism,
+        example: cur.example || d.example,
+        domains: cur.domains.length ? cur.domains : (d.domains.filter((x) => (ALL_DOMAINS as string[]).includes(x)) as Domain[]),
+        family: cur.family || ((d.family as FamilyId) in FAMILY_BY_ID ? (d.family as FamilyId) : ''),
+      }));
+    } catch {
+      setDraftError('ה-AI לא זמין כרגע. אפשר להמשיך ולנסח לבד, או לנסות שוב בעוד דקה.');
+    } finally {
+      setDrafting(false);
+    }
   };
 
   const manualReady = draft.name.trim() && draft.definition.trim() && draft.domains.length > 0 && draft.family;
@@ -307,8 +330,15 @@ export default function Create() {
             >
               <label className="block">
                 <span className="label">שם החוק</span>
-                <input className="input mt-1" value={draft.name} onChange={(e) => set('name', e.target.value)} placeholder="עד חמש מילים" />
+                <span className="mt-1 flex gap-1.5">
+                  <input className="input" value={draft.name} onChange={(e) => set('name', e.target.value)} placeholder="עד חמש מילים" />
+                  <button type="button" className="btn-primary btn-sm shrink-0" disabled={draft.name.trim().length < 2 || drafting} onClick={autoDraft}>
+                    {drafting ? 'מנסח...' : 'נסחי בשבילי'}
+                  </button>
+                </span>
               </label>
+              <p className="meta !mt-1">כותבים שם, וה-AI ממלא את השדות הריקים. מה שכתבת בעצמך נשאר.</p>
+              {draftError && <p className="problem text-xs">{draftError}</p>}
               <label className="block">
                 <span className="label flex items-center justify-between">
                   ההגדרה: מה החוק אומר

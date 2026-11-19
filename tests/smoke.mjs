@@ -7,6 +7,8 @@ import assert from 'node:assert/strict';
 const { chromium } = createRequire(import.meta.url)('playwright');
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:4173';
+// תמונת בדיקה: PNG של פיקסל אחד
+const TINY_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const SHOTS = process.argv[2];
 
 const MOCK = {
@@ -49,6 +51,15 @@ async function open(viewport) {
     requests.push(body.mode);
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK[body.mode] ?? { error: 'mode' }) });
   });
+  await page.route('**/functions/v1/chok-plus*', async (route) => {
+    const body = JSON.parse(route.request().postData() ?? '{}');
+    requests.push(body.mode);
+    const out =
+      body.mode === 'apps'
+        ? { insight: 'אימות **ברחוב** אמיתי.', picks: [{ id: 'a1', title: 'אפליקציית בדיקה', url: 'https://example.com', proves: 'מראה **דירוג** רחובות.', experiment: 'האם הרחוב המדורג ראשון פעיל גם בערב?' }] }
+        : { definition: 'הגדרה אוטומטית.', mechanism: 'מנגנון אוטומטי.', example: 'דוגמה מהעיר.', domains: ['עיר'], family: 'contagion' };
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(out) });
+  });
   await page.route('**/auth/v1/settings', (route) =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify({ external: { google: false } }) }),
   );
@@ -78,7 +89,7 @@ const noSideScroll = async (page, name) => {
   await page.waitForSelector('article h2:has-text("מספר דנבר")');
   assert.ok((await page.locator('button.tile.is-dim').count()) > 20, 'חוקים לא קשורים מעומעמים');
   await shot(page, 'home-desktop');
-  await page.getByRole('button', { name: /^גודל וסקייל/ }).click();
+  await page.locator('.pt-family', { hasText: 'גודל וסקייל' }).click();
   await page.waitForSelector('text=עיר גדולה אינה עיר קטנה מוגדלת');
   await page.getByRole('button', { name: 'רשת קשרים' }).click();
   assert.equal(await page.locator('.map-node').count(), 30, '30 חוקים ברשת');
@@ -92,7 +103,9 @@ const noSideScroll = async (page, name) => {
   // ניסוח ידני
   await page.getByRole('button', { name: 'אני מנסחת' }).click();
   await page.getByPlaceholder('עד חמש מילים').fill('חוק ידני');
-  await page.getByPlaceholder('משפט אחד').fill('הגדרה ידנית של חוק.');
+  // ניסוח אוטומטי ממלא את השדות הריקים
+  await page.getByRole('button', { name: 'נסחי בשבילי' }).click();
+  await page.waitForFunction(() => document.querySelector('textarea')?.value === 'הגדרה אוטומטית.');
   await page.getByRole('button', { name: 'שמרי בחוקים שלי' }).click();
   await page.waitForSelector('text="חוק ידני" נשמר');
   await shot(page, 'create-manual');
@@ -143,6 +156,22 @@ const noSideScroll = async (page, name) => {
 
   await page.goto(`${BASE}/law/zipf-law`);
   await page.waitForSelector('h2:has-text("חוק זיפ")');
+  // מסגרת התמונה: תרשים עד שמודבקת תמונה, פרומפט להעתקה, ותמונה שנשמרת אחרי רענון
+  await page.waitForSelector('.frame svg.glyph');
+  await page.getByRole('button', { name: 'הצגת הפרומפט' }).click();
+  await page.waitForSelector('text=Documentary realism');
+  await page.locator('input[type=file]').setInputFiles({ name: 't.png', mimeType: 'image/png', buffer: TINY_PNG });
+  await page.waitForSelector('.frame img');
+  await page.reload();
+  await page.waitForSelector('.frame img');
+  await page.getByRole('button', { name: 'הסרת התמונה' }).click();
+  await page.getByRole('button', { name: 'כן, להסיר' }).click();
+  await page.waitForSelector('.frame svg.glyph');
+  await page.getByRole('button', { name: 'החזרת התמונה' }).click();
+  await page.waitForSelector('.frame img');
+  // אימות באפליקציות אחרות
+  await page.getByRole('button', { name: 'מצאי אפליקציות שמאמתות' }).click();
+  await page.waitForSelector('a:has-text("אפליקציית בדיקה")');
   await shot(page, 'law-desktop');
   await page.goto(`${BASE}/law/not-a-law`);
   await page.waitForSelector('text=החוק הזה לא נמצא במאגר');
@@ -151,7 +180,7 @@ const noSideScroll = async (page, name) => {
   await page.waitForSelector('input[type="email"]');
   await shot(page, 'menu-desktop');
 
-  assert.deepEqual([...new Set(requests)].sort(), ['correlations', 'create', 'explain']);
+  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'correlations', 'create', 'draft', 'explain']);
   assert.deepEqual(errors, [], 'אין שגיאות בדפדפן');
 }
 
