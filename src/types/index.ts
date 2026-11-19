@@ -35,6 +35,7 @@ export interface SavedLaw {
   tags: string[];
   parent_law_ids: string[];
   why_novel?: string;
+  family?: string; // משפחת המנגנון, למיקום בטבלה המחזורית
   created_at: string;
   synced?: boolean;
 }

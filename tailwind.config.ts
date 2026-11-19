@@ -5,7 +5,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Heebo', 'system-ui', 'sans-serif'],
+        sans: ['"IBM Plex Sans Hebrew"', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', '"IBM Plex Sans Hebrew"', 'monospace'],
       },
       colors: {
         // צבעי תחומים

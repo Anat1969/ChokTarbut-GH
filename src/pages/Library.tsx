@@ -6,10 +6,12 @@ import DomainFilter from '../components/DomainFilter';
 import { domainColor } from '../components/DomainBadge';
 import Evidence from '../components/Evidence';
 import LawPortrait from '../components/LawPortrait';
+import { FAMILIES, FAMILY_OF } from '../data/families';
 import type { Domain, Law } from '../types';
 
-type Sort = 'domain' | 'evidence' | 'links';
+type Sort = 'family' | 'domain' | 'evidence' | 'links';
 const SORTS: { id: Sort; label: string }[] = [
+  { id: 'family', label: 'לפי משפחת מנגנון' },
   { id: 'domain', label: 'לפי תחום' },
   { id: 'evidence', label: 'לפי חוזק ראיות' },
   { id: 'links', label: 'לפי מספר קשרים' },
@@ -25,7 +27,7 @@ const EVIDENCE_TITLES: Record<number, string> = {
 export default function Library() {
   const navigate = useNavigate();
   const [domain, setDomain] = useState<Domain | null>(null);
-  const [sort, setSort] = useState<Sort>('domain');
+  const [sort, setSort] = useState<Sort>('family');
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState(INITIAL_LAWS[0].id);
 
@@ -36,8 +38,13 @@ export default function Library() {
         (!domain || l.domain.includes(domain)) &&
         (!q || [l.name, l.name_en ?? '', l.definition, ...l.tags].some((t) => t.toLowerCase().includes(q.toLowerCase()))),
     );
-    const out: { title: string; color?: string; laws: Law[] }[] = [];
-    if (sort === 'domain') {
+    const out: { title: string; note?: string; color?: string; laws: Law[] }[] = [];
+    if (sort === 'family') {
+      for (const f of FAMILIES) {
+        const list = laws.filter((l) => FAMILY_OF[l.id] === f.id);
+        if (list.length) out.push({ title: f.name, note: f.short, laws: list });
+      }
+    } else if (sort === 'domain') {
       for (const d of ALL_DOMAINS) {
         const list = laws.filter((l) => l.domain[0] === d);
         if (list.length) out.push({ title: d, color: domainColor(d), laws: list });
@@ -69,7 +76,7 @@ export default function Library() {
   return (
     <main className="page screen grid md:grid-cols-[38.2fr_61.8fr]">
       <section className="flex min-h-0 flex-col px-4 py-4 md:px-6">
-        <h1 className="text-2xl font-black leading-tight">
+        <h1 className="h2">
           <span className="marker">{count}</span> חוקים, מקובצים {SORTS.find((s) => s.id === sort)!.label}.
         </h1>
         <div className="mt-3 space-y-2">
@@ -118,6 +125,7 @@ export default function Library() {
                 {g.color && <span className="h-3 w-3" style={{ backgroundColor: g.color }} />}
                 {g.title}
                 <span className="meta font-normal">{g.laws.length}</span>
+                {g.note && <span className="meta font-normal">· {g.note}</span>}
               </h2>
               <ul>
                 {g.laws.map((l) => (

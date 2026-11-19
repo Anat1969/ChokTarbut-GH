@@ -86,7 +86,7 @@ export default function Explain({ user }: { user: User | null }) {
   return (
     <main className="page screen grid md:grid-cols-[38.2fr_61.8fr]">
       <section className="scroll-y px-4 py-5 md:px-6">
-        <h1 className="text-2xl font-black leading-tight">
+        <h1 className="h2">
           תארי תופעה. <span className="marker">החוק שמאחוריה</span> יופיע.
         </h1>
         <form
