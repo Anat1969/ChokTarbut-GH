@@ -1,95 +1,82 @@
-import { useNavigate } from 'react-router-dom';
-import { signInWithGoogle } from '../lib/supabase';
-import type { User } from '../types';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { INITIAL_LAWS, getLawById } from '../data/laws';
+import { EDGES, CROSS_DOMAIN_EDGES, HUB } from '../lib/graph';
+import LawMap from '../components/LawMap';
+import LawPortrait from '../components/LawPortrait';
+import DomainFilter from '../components/DomainFilter';
+import type { Domain } from '../types';
 
-interface HomeProps {
-  user: User | null;
-}
-
-const engines = [
-  {
-    id: 'library',
-    label: 'גלה',
-    sub: 'ספריית חוקי התנהגות',
-    path: '/library',
-    description: '20 חוקים ממדעים שונים — כולם מחכים לחיבור',
-  },
-  {
-    id: 'explain',
-    label: 'הסבר',
-    sub: 'תופעה ← חוק',
-    path: '/explain',
-    description: 'תאר תופעה שמסקרנת אותך וגלה איזה חוק מסביר אותה',
-  },
-  {
-    id: 'create',
-    label: 'צור',
-    sub: 'חוק חדש מקורלציות',
-    path: '/create',
-    description: 'בחר שני חוקים מתחומים שונים — ה-AI יסנתז חוק חדש',
-  },
+const ENGINES = [
+  { to: '/library', label: 'גלה', text: 'כל החוקים, לפי תחום וקשר' },
+  { to: '/explain', label: 'הסבר', text: 'תופעה נכנסת, חוק יוצא' },
+  { to: '/create', label: 'צור', text: 'שני חוקים הופכים לחוק חדש' },
 ];
 
-export default function Home({ user }: HomeProps) {
-  const navigate = useNavigate();
+const randomId = () => INITIAL_LAWS[Math.floor(Math.random() * INITIAL_LAWS.length)].id;
+
+export default function Home() {
+  // דף הבית מתחלף: חוק אחר בכל כניסה, ומתחלף לבד עד שענת בוחרת
+  const [selectedId, setSelectedId] = useState(randomId);
+  const [touched, setTouched] = useState(false);
+  const [domain, setDomain] = useState<Domain | null>(null);
+
+  useEffect(() => {
+    if (touched || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const timer = setInterval(() => setSelectedId(randomId()), 7000);
+    return () => clearInterval(timer);
+  }, [touched]);
+
+  const select = (id: string) => {
+    setTouched(true);
+    setSelectedId(id);
+  };
+  const law = getLawById(selectedId)!;
 
   return (
-    <div className="page-content">
-      {/* Hero */}
-      <section className="border-b border-zinc-100 px-8 py-16">
-        <div className="max-w-2xl">
-          <p className="text-xs uppercase tracking-widest text-zinc-400 mb-4">
-            מדע × עיצוב × חשיבה
-          </p>
-          <h1 className="text-5xl font-black leading-tight mb-6">
-            חוקי<br />התנהגות
+    <main className="page screen grid md:grid-cols-[38.2fr_61.8fr]">
+      {/* טור הכניסה: המסר, שלושת המנועים, ודיוקן החוק שנבחר */}
+      <section className="scroll-y flex flex-col gap-5 px-4 py-5 md:px-6">
+        <div>
+          <h1 className="text-3xl font-black leading-tight md:text-[2.6rem]">
+            חוק אחד מסביר תופעות <mark className="marker bg-transparent">בעולמות רחוקים</mark>.
           </h1>
-          <p className="text-zinc-600 text-lg leading-relaxed max-w-lg">
-            דפוסים שחוזרים בביולוגיה, חברה, ספורט, ועיר.
-            למד אותם. השתמש בהם. צור חדשים.
+          <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+            <b className="text-black">{INITIAL_LAWS.length}</b> חוקים ו-<b className="text-black">{EDGES.length}</b> קשרים.{' '}
+            <b className="text-black">{CROSS_DOMAIN_EDGES}</b> מהקשרים מחברים חוקים שאין להם תחום משותף.
+            <br />
+            החוק המקושר ביותר:{' '}
+            <button className="font-bold underline decoration-2 underline-offset-2" onClick={() => select(HUB.law.id)}>
+              {HUB.law.name}
+            </button>
+            , עם <b className="text-black">{HUB.degree}</b> קשרים.
           </p>
         </div>
-      </section>
 
-      {/* שלושה מנועים */}
-      <section className="px-8 py-12">
-        <div className="grid grid-cols-3 gap-px bg-zinc-200 max-w-5xl">
-          {engines.map((engine) => (
-            <button
-              key={engine.id}
-              onClick={() => navigate(engine.path)}
-              className="bg-white p-8 text-right hover:bg-zinc-50 transition-colors group"
-            >
-              <div className="text-4xl font-black mb-1 group-hover:text-zinc-700 transition-colors">
-                {engine.label}
-              </div>
-              <div className="text-xs text-zinc-400 mb-4 font-mono">
-                {engine.sub}
-              </div>
-              <p className="text-sm text-zinc-600 leading-relaxed">
-                {engine.description}
-              </p>
-            </button>
+        <nav className="grid grid-cols-3 gap-2" aria-label="שלושת המנועים">
+          {ENGINES.map((e) => (
+            <Link key={e.to} to={e.to} className="btn-primary flex-col !items-start !gap-0 !px-3 !py-3 text-right">
+              <span className="text-2xl font-black leading-none">{e.label}</span>
+              <span className="mt-1.5 text-[11px] font-normal leading-snug opacity-70">{e.text}</span>
+            </Link>
           ))}
+        </nav>
+
+        <div className="bg-zinc-50 p-4" aria-live="polite">
+          <LawPortrait law={law} onSelect={select} brief />
         </div>
       </section>
 
-      {/* Auth — רק אם לא מחובר */}
-      {!user && (
-        <section className="px-8 pb-16">
-          <div className="border border-zinc-200 p-8 max-w-md">
-            <p className="text-sm text-zinc-600 mb-4">
-              כנסי עם Google כדי לשמור חוקים שיצרת ולעקוב אחרי ההסברים שלך
-            </p>
-            <button
-              onClick={() => signInWithGoogle()}
-              className="btn-primary w-full"
-            >
-              כניסה עם Google
-            </button>
-          </div>
-        </section>
-      )}
-    </div>
+      {/* המוקד: מפת הקשרים */}
+      <section className="flex min-h-0 flex-col px-2 pb-3 md:px-4 md:py-4">
+        <div className="px-2">
+          <DomainFilter value={domain} onChange={setDomain} />
+          <p className="meta mt-1.5">
+            כל נקודה היא חוק, בצבע התחום שלו. כל קו הוא קשר. נקודה גדולה: חוק עם הרבה קשרים. לחיצה בוחרת חוק.
+          </p>
+        </div>
+        <LawMap selectedId={selectedId} domain={domain} onSelect={select} className="min-h-0 w-full md:flex-1" />
+      </section>
+    </main>
   );
 }

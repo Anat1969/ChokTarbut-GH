@@ -1,19 +1,9 @@
 // טיפוסים משותפים לכל האפליקציה
 
-export type Domain =
-  | 'ביולוגיה'
-  | 'חברה'
-  | 'ספורט'
-  | 'עיר'
-  | 'תרבות'
-  | 'כלכלה'
-  | 'פסיכולוגיה'
-  | 'טכנולוגיה'
-  | 'פיזיקה'
-  | 'אבולוציה';
+export type Domain = 'ביולוגיה' | 'חברה' | 'ספורט' | 'עיר' | 'תרבות' | 'כלכלה';
 
 export interface Example {
-  domain: Domain;
+  domain: string;
   description: string;
 }
 
@@ -26,24 +16,36 @@ export interface Law {
   mechanism: string;
   examples: Example[];
   evidence_strength: 1 | 2 | 3 | 4 | 5;
-  correlations: string[]; // IDs של חוקים קשורים
+  correlations: string[]; // מזהים של חוקים קשורים
   source: string;
   created_by: 'system' | 'anat';
   tags: string[];
 }
 
-export interface UserLaw extends Law {
-  user_id: string;
+// חוק שענת יצרה, או חוק מהמאגר שהיא סימנה
+export interface SavedLaw {
+  id: string;
+  kind: 'created' | 'marked';
+  name: string;
+  name_en?: string;
+  domain: string[];
+  definition: string;
+  mechanism: string;
+  examples: Example[];
+  tags: string[];
   parent_law_ids: string[];
+  why_novel?: string;
   created_at: string;
-  saved_at?: string;
+  synced?: boolean;
 }
 
 export interface ExplainResult {
   matched_law_ids: string[];
-  explanation: string;
-  additional_examples: Array<{ domain: string; description: string }>;
   insight: string;
+  explanation: string;
+  per_law: Array<{ id: string; how: string }>;
+  additional_examples: Example[];
+  by: 'gemini' | 'claude' | 'local';
 }
 
 export interface CreateLawResult {
@@ -51,10 +53,11 @@ export interface CreateLawResult {
   name_en: string;
   definition: string;
   mechanism: string;
-  examples: Array<{ domain: string; description: string }>;
+  examples: Example[];
   why_novel: string;
   domain: string[];
   tags: string[];
+  by?: string;
 }
 
 export interface CorrelationResult {
@@ -65,18 +68,11 @@ export interface CorrelationResult {
     surprise: string;
   }>;
   meta_pattern: string;
-}
-
-export interface AppState {
-  user: User | null;
-  laws: Law[];
-  userLaws: UserLaw[];
-  loading: boolean;
+  by?: string;
 }
 
 export interface User {
   id: string;
   email: string;
   name?: string;
-  avatar_url?: string;
 }
