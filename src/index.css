@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    direction: rtl;
+    font-family: 'Heebo', system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-white text-black antialiased;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+}
+
+@layer components {
+  /* כפתורים מרובעים — anat-standards */
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-3 font-medium text-sm
+           transition-all duration-150 cursor-pointer select-none
+           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black;
+    border-radius: 0;
+  }
+
+  .btn-primary {
+    @apply btn bg-black text-white hover:bg-zinc-800 active:bg-zinc-900;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-black border border-black hover:bg-zinc-50;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-black hover:bg-zinc-100;
+  }
+
+  /* כרטיס חוק */
+  .law-card {
+    @apply bg-white border border-zinc-200 p-5 cursor-pointer
+           hover:border-black hover:shadow-sm transition-all duration-150;
+  }
+
+  /* תג תחום */
+  .domain-badge {
+    @apply inline-block px-2 py-0.5 text-xs font-medium text-white;
+  }
+
+  /* כותרת מקטע */
+  .section-title {
+    @apply text-2xl font-bold tracking-tight;
+  }
+
+  /* שדה קלט */
+  .input {
+    @apply w-full border border-zinc-300 px-4 py-3 text-sm
+           focus:outline-none focus:border-black transition-colors;
+    border-radius: 0;
+  }
+}
+
+/* סרגל עליון */
+.topbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 50;
+  height: 56px;
+  background: white;
+  border-bottom: 1px solid #e4e4e7;
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+}
+
+/* תוכן מתחת לסרגל */
+.page-content {
+  padding-top: 56px;
+  min-height: 100vh;
+}
