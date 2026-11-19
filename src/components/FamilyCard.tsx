@@ -14,9 +14,7 @@ export default function FamilyCard({ family, compact = false }: { family: Family
         <dt className="label pt-0.5">הכלל</dt>
         <dd>{family.rule}</dd>
         <dt className="label pt-0.5">התובנה</dt>
-        <dd>
-          <mark className="marker bg-transparent">{family.insight}</mark>
-        </dd>
+        <dd className="font-semibold">{family.insight}</dd>
         <dt className="label pt-0.5 text-green-700">בעיר</dt>
         <dd>{family.apply}</dd>
       </dl>
