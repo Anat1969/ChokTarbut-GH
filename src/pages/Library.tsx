@@ -153,7 +153,7 @@ export default function Library() {
 
       <section className="scroll-y hidden bg-zinc-50 px-8 py-6 md:block">
         <div className="max-w-2xl">
-          <LawPortrait law={law} onSelect={setSelectedId} />
+          <LawPortrait law={law} onSelect={setSelectedId} withImage />
         </div>
       </section>
     </main>

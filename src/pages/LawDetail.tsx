@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getLawById } from '../data/laws';
 import LawPortrait from '../components/LawPortrait';
 import LawMap from '../components/LawMap';
+import LawImage from '../components/LawImage';
 
 export default function LawDetail() {
   const { id } = useParams<{ id: string }>();
@@ -28,11 +29,14 @@ export default function LawDetail() {
         </Link>
         <LawPortrait law={law} />
       </section>
-      <section className="hidden min-h-0 flex-col px-4 py-4 md:flex">
-        <p className="meta px-2">
-          <b className="text-black">{law.name}</b> בתוך מפת הקשרים. לחיצה על חוק אחר עוברת אליו.
-        </p>
-        <LawMap selectedId={law.id} onSelect={(next) => navigate(`/law/${next}`)} className="min-h-0 w-full flex-1" />
+      <section className="scroll-y grid content-start gap-6 px-4 py-5 md:grid-cols-[1fr_1.25fr] md:px-6" data-col="main">
+        <LawImage law={law} />
+        <div className="hidden min-h-0 flex-col md:flex">
+          <p className="meta">
+            <b className="text-black">{law.name}</b> ברשת הקשרים. לחיצה על חוק אחר עוברת אליו.
+          </p>
+          <LawMap selectedId={law.id} onSelect={(next) => navigate(`/law/${next}`)} className="w-full" narrow />
+        </div>
       </section>
     </main>
   );

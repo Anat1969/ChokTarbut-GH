@@ -3,6 +3,7 @@ import { FAMILIES, FAMILY_OF, SHORT_NAME, type FamilyId } from '../data/families
 import { NEIGHBORS } from '../lib/graph';
 import { useSavedLaws } from '../lib/store';
 import { domainColor, domainInk } from './DomainBadge';
+import FamilyGlyph from './FamilyGlyph';
 import type { Domain } from '../types';
 
 export type Selection =
@@ -73,8 +74,11 @@ export default function PeriodicTable({ selection, hoverId, onHover, onSelect, d
             aria-pressed={rowOn === f.id}
             onClick={() => onSelect(rowOn === f.id ? null : { type: 'family', id: f.id })}
           >
-            <span className="block text-[13px] font-bold leading-tight">{f.name}</span>
-            <span className="hidden text-[10px] leading-tight opacity-60 md:block">{f.short}</span>
+            <span className="flex items-center gap-2">
+              <FamilyGlyph family={f.id} className="pt-glyph h-7 w-7 shrink-0" />
+              <span className="text-[13px] font-bold leading-tight">{f.name}</span>
+            </span>
+            <span className="mt-0.5 hidden text-[10px] leading-tight opacity-60 md:block">{f.short}</span>
           </button>
           {ALL_DOMAINS.map((d, c) => {
             const laws = CELLS[r][c];

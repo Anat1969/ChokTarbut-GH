@@ -8,6 +8,7 @@ import PeriodicTable, { EMPTY_CELLS, type Selection } from '../components/Period
 import LawMap from '../components/LawMap';
 import LawPortrait from '../components/LawPortrait';
 import FamilyCard from '../components/FamilyCard';
+import FamilyGlyph from '../components/FamilyGlyph';
 import type { Domain } from '../types';
 
 const randomLaw = (): Selection => ({ type: 'law', id: INITIAL_LAWS[Math.floor(Math.random() * INITIAL_LAWS.length)].id });
@@ -177,6 +178,28 @@ export default function Home() {
             משבצות ריקות בטבלה. עד עכשיו ניסחת <b className="text-black">{saved.filter((l) => l.kind === 'created').length}</b> חוקים משלך.
           </span>
         </Link>
+      </section>
+
+      <section className="px-4 pb-8 md:px-6">
+        <h2 className="h2">שישה מנגנונים, בתרשים אחד לכל אחד.</h2>
+        <p className="meta mb-3 mt-1">לחיצה מדליקה את השורה של המנגנון בטבלה.</p>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+          {FAMILIES.map((f) => (
+            <button
+              key={f.id}
+              className="card-link"
+              aria-pressed={selection?.type === 'family' && selection.id === f.id}
+              onClick={() => {
+                select({ type: 'family', id: f.id });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            >
+              <FamilyGlyph family={f.id} animate className="mb-2 aspect-square w-full" />
+              <span className="block text-sm font-bold">{f.name}</span>
+              <span className="block text-xs leading-snug text-zinc-600">{f.short}</span>
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="grid gap-8 bg-zinc-50 px-4 py-8 md:grid-cols-[1.618fr_1fr] md:px-6">

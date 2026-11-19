@@ -46,3 +46,34 @@ export function findCorrelations(law: Law): Promise<CorrelationResult> {
       .filter(Boolean),
   });
 }
+
+// ---------- chok-plus: אימות באפליקציות אחרות, וניסוח אוטומטי ----------
+async function plus<T>(body: Record<string, unknown>): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('chok-plus', { body });
+  if (error) throw new Error(error.message);
+  if (!data || data.error) throw new Error(data?.error ?? 'תשובה ריקה');
+  return data as T;
+}
+
+export interface AppEvidence {
+  insight: string;
+  picks: Array<{ id: string; title: string; url: string; proves: string; experiment: string }>;
+}
+
+// אילו אפליקציות מתיק האפליקציות של ענת יכולות לבדוק את החוק, ואיך
+export function findApps(law: Law): Promise<AppEvidence> {
+  return plus<AppEvidence>({ mode: 'apps', law: brief(law) });
+}
+
+export interface LawDraft {
+  definition: string;
+  mechanism: string;
+  example: string;
+  domains: string[];
+  family: string;
+}
+
+// ניסוח אוטומטי של חוק משם בלבד
+export function draftLaw(name: string, parents: string[]): Promise<LawDraft> {
+  return plus<LawDraft>({ mode: 'draft', name, parents });
+}
