@@ -2,27 +2,8 @@
 // מקור: מגזין Epoch גיליון 409, נובמבר 2026
 // 11 חוקים שחולצו מתצלומי המגזין
 
-export type Domain = 'ביולוגיה' | 'חברה' | 'ספורט' | 'עיר' | 'תרבות' | 'כלכלה';
-
-export interface Example {
-  domain: Domain;
-  description: string;
-}
-
-export interface Law {
-  id: string;
-  name: string;
-  name_en?: string;
-  domain: Domain[];
-  definition: string;
-  mechanism: string;
-  examples: Example[];
-  evidence_strength: 1 | 2 | 3 | 4 | 5;
-  correlations: string[]; // IDs of related laws
-  source: string;
-  created_by: 'system' | 'anat';
-  tags: string[];
-}
+import type { Domain, Law } from '../types';
+export type { Domain, Law, Example } from '../types';
 
 export const DOMAIN_COLORS: Record<Domain, string> = {
   'ביולוגיה': '#2D6A4F',
@@ -407,6 +388,198 @@ export const INITIAL_LAWS: Law[] = [
     source: 'Epoch 409, נובמבר 2026',
     created_by: 'system',
     tags: ['מסכים', 'פסיביות', 'קשב', 'אלגוריתמים', 'סחף תרבותי'],
+  },
+
+  // === חוקי עיר ותרבות (קלאסיים) ===
+
+  {
+    id: 'braess-paradox',
+    name: 'פרדוקס בראס',
+    name_en: "Braess's Paradox",
+    domain: ['עיר', 'כלכלה'],
+    definition: 'הוספת כביש לרשת עמוסה יכולה להאריך את זמן הנסיעה של כולם, וסגירת כביש יכולה לקצר אותו.',
+    mechanism: 'כל נהג בוחר את המסלול הטוב לעצמו. קיצור דרך חדש מושך את כולם לאותו מקטע, ושיווי המשקל החדש גרוע מהקודם. טובת הפרט וטובת הרשת נפרדות.',
+    examples: [
+      { domain: 'עיר', description: 'סיאול פירקה את הכביש המהיר שמעל נחל צ\'ונגייצ\'ון ושיקמה את הנחל, והתנועה במרכז העיר לא קרסה' },
+      { domain: 'ספורט', description: 'קבוצת כדורסל שמעבירה כל התקפה דרך הכוכב שלה נעשית צפויה, ולעתים קולעת פחות' },
+      { domain: 'כלכלה', description: 'ערוץ מסחר מהיר חדש מושך את כל הסוחרים לאותו נתיב, והעומס מוחק את היתרון' },
+    ],
+    evidence_strength: 4,
+    correlations: ['induced-demand', 'tragedy-of-commons', 'schelling-point'],
+    source: 'Dietrich Braess (1968)',
+    created_by: 'system',
+    tags: ['תנועה', 'רשת', 'שיווי משקל', 'כבישים'],
+  },
+
+  {
+    id: 'induced-demand',
+    name: 'חוק הביקוש המושרה',
+    name_en: 'Induced Demand',
+    domain: ['עיר', 'כלכלה'],
+    definition: 'הרחבת כביש עמוס מייצרת נסיעות חדשות, עד שהעומס חוזר לרמתו הקודמת.',
+    mechanism: 'נתיב נוסף מוזיל את מחיר הנסיעה בזמן. אנשים שנמנעו מלנסוע, נסעו בשעה אחרת או באמצעי אחר, חוזרים לכביש. ההיצע יוצר את הביקוש שלו.',
+    examples: [
+      { domain: 'עיר', description: 'מחקר על ערי ארצות הברית מצא שהנסועה גדלה כמעט ביחס של אחד לאחד עם תוספת הנתיבים' },
+      { domain: 'כלכלה', description: 'דיסק גדול יותר מתמלא, ותיבת דואר מהירה יותר מתמלאת בעוד הודעות' },
+      { domain: 'חברה', description: 'הוספת שעות קבלה מזמינה פניות שלא היו מגיעות קודם' },
+    ],
+    evidence_strength: 4,
+    correlations: ['braess-paradox', 'parkinson-law', 'marchetti-constant'],
+    source: 'Anthony Downs (1962); Duranton & Turner (2011)',
+    created_by: 'system',
+    tags: ['תנועה', 'כבישים', 'ביקוש', 'תכנון'],
+  },
+
+  {
+    id: 'eyes-on-the-street',
+    name: 'חוק העיניים על הרחוב',
+    name_en: 'Eyes on the Street',
+    domain: ['עיר', 'חברה'],
+    definition: 'רחוב בטוח הוא רחוב שיש בו אנשים שמביטים בו: חזיתות פעילות, חלונות ותנועה רגלית לאורך היום.',
+    mechanism: 'נוכחות רציפה של עוברים ושבים ושל בעלי עסקים יוצרת השגחה טבעית, בלי שוטר ובלי מצלמה. עירוב שימושים מאריך את שעות הפעילות, ולכן את שעות ההשגחה.',
+    examples: [
+      { domain: 'עיר', description: 'רחוב מסחרי עם דירות מעל החנויות חי גם בערב, לעומת רחוב משרדים שמתרוקן בחמש' },
+      { domain: 'חברה', description: 'חצר משותפת שהחלונות פונים אליה מאפשרת לילדים לשחק לבד' },
+      { domain: 'ביולוגיה', description: 'בלהקה, ריבוי עיניים מקצר את זמן הגילוי של טורף' },
+    ],
+    evidence_strength: 3,
+    correlations: ['broken-windows', 'murmuration-law', 'adaptive-sleep-law'],
+    source: "Jane Jacobs (1961), 'The Death and Life of Great American Cities'",
+    created_by: 'system',
+    tags: ['רחוב', 'ביטחון', 'עירוב שימושים', 'הליכה'],
+  },
+
+  {
+    id: 'marchetti-constant',
+    name: 'קבוע מרקטי',
+    name_en: "Marchetti's Constant",
+    domain: ['עיר', 'חברה'],
+    definition: 'בני אדם מקדישים לנסיעות יומיות כשעה ביום, בכל תקופה ובכל אמצעי תחבורה.',
+    mechanism: 'תקציב הזמן קבוע, והמהירות משתנה. לכן אמצעי תחבורה מהיר יותר לא מקצר את היומיום, אלא מגדיל את העיר: רדיוס העיר שווה למרחק של כחצי שעה.',
+    examples: [
+      { domain: 'עיר', description: 'עיר של הולכי רגל הייתה ברדיוס של כשניים וחצי קילומטרים; הרכבת והמכונית הרחיבו אותה פי כמה' },
+      { domain: 'חברה', description: 'רכבת מהירה לא מקצרת את זמן היוממות, אלא מרחיקה את מקום המגורים' },
+      { domain: 'כלכלה', description: 'מחיר הדירה יורד עם זמן ההגעה למרכז, ולא עם המרחק בקילומטרים' },
+    ],
+    evidence_strength: 3,
+    correlations: ['induced-demand', 'urban-scaling', 'dunbar-number'],
+    source: 'Cesare Marchetti (1994), על בסיס Yacov Zahavi',
+    created_by: 'system',
+    tags: ['יוממות', 'זמן', 'גודל עיר', 'תחבורה'],
+  },
+
+  {
+    id: 'urban-scaling',
+    name: 'חוק הסקיילינג העירוני',
+    name_en: 'Urban Scaling Law',
+    domain: ['עיר', 'כלכלה', 'ביולוגיה'],
+    definition: 'כשעיר מכפילה את אוכלוסייתה, התוצר, החדשנות וגם הפשיעה גדלים בכ-15% יותר מפי שניים, והתשתית הנדרשת קטנה בכ-15%.',
+    mechanism: 'עיר היא רשת של מפגשים. צפיפות מגדילה את מספר המפגשים לאדם, ולכן את קצב ההמצאה, ההכנסה וגם המחלות. התשתית, כמו כלי דם, מתייעלת עם הגודל.',
+    examples: [
+      { domain: 'עיר', description: 'מספר הפטנטים והשכר הממוצע עולים עם גודל העיר, וכך גם קצב ההליכה' },
+      { domain: 'ביולוגיה', description: 'בעלי חיים גדולים חסכוניים יותר באנרגיה לכל קילוגרם, כפי שעיר גדולה חסכונית בכבישים לנפש' },
+      { domain: 'כלכלה', description: 'חברות, בשונה מערים, גדלות בקצב שהולך ומאט, ולכן רובן מתות' },
+    ],
+    evidence_strength: 4,
+    correlations: ['kleiber-law', 'zipf-law', 'metcalfe-law', 'marchetti-constant'],
+    source: 'Bettencourt, Lobo, Helbing, Kühnert & West (2007), PNAS',
+    created_by: 'system',
+    tags: ['גודל עיר', 'חדשנות', 'צפיפות', 'רשת'],
+  },
+
+  {
+    id: 'kleiber-law',
+    name: 'חוק קלייבר',
+    name_en: "Kleiber's Law",
+    domain: ['ביולוגיה'],
+    definition: 'קצב חילוף החומרים של בעל חיים גדל עם מסת הגוף בחזקת שלושה רבעים: גוף גדול פי 16 צורך אנרגיה רק פי 8.',
+    mechanism: 'רשתות הובלה מסועפות, כמו כלי דם, מתייעלות עם הגודל. לכן בעלי חיים גדולים חיים לאט יותר: דופק איטי, גדילה איטית וחיים ארוכים.',
+    examples: [
+      { domain: 'ביולוגיה', description: 'לב של עכבר פועם כ-600 פעמים בדקה, ולב של פיל כ-30' },
+      { domain: 'עיר', description: 'עיר גדולה צריכה פחות תחנות דלק וקילומטרים של צנרת לכל תושב' },
+      { domain: 'כלכלה', description: 'יתרון לגודל: עלות ליחידה יורדת כשהרשת גדלה' },
+    ],
+    evidence_strength: 5,
+    correlations: ['urban-scaling', 'peto-paradox', 'diminishing-returns'],
+    source: 'Max Kleiber (1932)',
+    created_by: 'system',
+    tags: ['אנרגיה', 'גודל', 'רשת', 'חילוף חומרים'],
+  },
+
+  {
+    id: 'tragedy-of-commons',
+    name: 'הטרגדיה של נחלת הכלל',
+    name_en: 'Tragedy of the Commons',
+    domain: ['כלכלה', 'חברה', 'עיר'],
+    definition: 'משאב משותף שכל אחד מנצל לטובתו נשחק עד שהוא אובד לכולם.',
+    mechanism: 'הרווח מניצול נוסף שייך ליחיד, והמחיר מתחלק בין כולם. בלי כללים, בעלות או נורמה קהילתית, ההיגיון של כל פרט מוביל להרס משותף.',
+    examples: [
+      { domain: 'עיר', description: 'חניה חינם ברחוב מתמלאת, והחיפוש אחריה מוסיף תנועה לכל הרחוב' },
+      { domain: 'ביולוגיה', description: 'דיג יתר: כל ספינה מרוויחה מעוד רשת, עד שהלהקה קורסת' },
+      { domain: 'חברה', description: 'קהילות שמנהלות יחד מים או מרעה לאורך דורות מראות שכללים מקומיים מונעים את הטרגדיה' },
+    ],
+    evidence_strength: 4,
+    correlations: ['braess-paradox', 'goodhart-law', 'minority-rule'],
+    source: 'Garrett Hardin (1968); Elinor Ostrom (1990)',
+    created_by: 'system',
+    tags: ['משאב משותף', 'מרחב ציבורי', 'כללים', 'קהילה'],
+  },
+
+  {
+    id: 'broken-windows',
+    name: 'תאוריית החלונות השבורים',
+    name_en: 'Broken Windows Theory',
+    domain: ['עיר', 'חברה'],
+    definition: 'סימן גלוי של הזנחה, כמו חלון שבור שלא תוקן, משדר שאין משגיח ומזמין הזנחה נוספת.',
+    mechanism: 'הסביבה היא מסר על הנורמה. אנשים מתאימים את ההתנהגות למה שהם רואים סביבם. התאוריה שנויה במחלוקת: הראיות להשפעה על פשיעה חמורה חלשות.',
+    examples: [
+      { domain: 'עיר', description: 'פינה שמצטברת בה פסולת מושכת עוד פסולת, ופינה נקייה נשארת נקייה זמן רב יותר' },
+      { domain: 'חברה', description: 'בניסוי בהולנד, אנשים השליכו יותר עלונים לרצפה כשהקיר לידם היה מכוסה גרפיטי' },
+      { domain: 'תרבות', description: 'בקוד תוכנה, קובץ מוזנח אחד מוריד את הרף של כל מי שנוגע בו אחר כך' },
+    ],
+    evidence_strength: 2,
+    correlations: ['eyes-on-the-street', 'social-contagion', 'information-cascade'],
+    source: 'Wilson & Kelling (1982); Keizer, Lindenberg & Steg (2008)',
+    created_by: 'system',
+    tags: ['הזנחה', 'נורמה', 'מרחב ציבורי', 'תחזוקה'],
+  },
+
+  {
+    id: 'matthew-effect',
+    name: 'אפקט מתיו',
+    name_en: 'Matthew Effect',
+    domain: ['תרבות', 'חברה', 'כלכלה'],
+    definition: 'מי שיש לו יקבל עוד: יתרון ראשוני קטן מושך אליו משאבים והכרה, והפער גדל מעצמו.',
+    mechanism: 'יתרון מצטבר. תשומת לב, כסף וקשרים זורמים אל מי שכבר בולט, כי בולטות היא האות הזול ביותר לאיכות.',
+    examples: [
+      { domain: 'תרבות', description: 'מדען מפורסם מקבל את רוב הקרדיט על תגלית משותפת, ושיר שנכנס למצעד מושמע עוד' },
+      { domain: 'עיר', description: 'רחוב שכבר מצליח מושך אליו עוד עסקים, והרחוב הסמוך מתרוקן' },
+      { domain: 'כלכלה', description: 'הון מניב תשואה, והתשואה מגדילה את ההון' },
+    ],
+    evidence_strength: 4,
+    correlations: ['pareto-principle', 'zipf-law', 'information-cascade', 'metcalfe-law'],
+    source: 'Robert K. Merton (1968)',
+    created_by: 'system',
+    tags: ['יתרון מצטבר', 'אי שוויון', 'הכרה', 'מוניטין'],
+  },
+
+  {
+    id: 'parkinson-law',
+    name: 'חוק פרקינסון',
+    name_en: "Parkinson's Law",
+    domain: ['תרבות', 'כלכלה'],
+    definition: 'העבודה מתרחבת עד שהיא ממלאת את כל הזמן שהוקצה לה.',
+    mechanism: 'בלי אילוץ, המשימה מתנפחת: עוד בדיקות, עוד ישיבות ועוד שכבות. מנגנון שמייצר עבודה לעצמו גדל בלי קשר לכמות התפוקה.',
+    examples: [
+      { domain: 'תרבות', description: 'ישיבה שנקבעה לשעה נמשכת שעה, גם כשהנושא נסגר בעשר דקות' },
+      { domain: 'עיר', description: 'הליך רישוי שהוקצבו לו חודשים מתמלא בסבבי הערות עד המועד האחרון' },
+      { domain: 'כלכלה', description: 'ההוצאות עולות עד גובה ההכנסה' },
+    ],
+    evidence_strength: 3,
+    correlations: ['induced-demand', 'brooks-law', 'goodhart-law'],
+    source: 'C. Northcote Parkinson (1955), The Economist',
+    created_by: 'system',
+    tags: ['זמן', 'ארגון', 'בירוקרטיה', 'אילוץ'],
   },
 ];
 

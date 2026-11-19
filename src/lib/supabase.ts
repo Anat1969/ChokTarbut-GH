@@ -1,90 +1,76 @@
 import { createClient } from '@supabase/supabase-js';
+import type { SavedLaw } from '../types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// פרויקט Supabase המשותף של ענת. המפתח כאן הוא המפתח הציבורי (anon), שמותר לו להופיע בדפדפן.
+// כל הטבלאות של האפליקציה נושאות את הקידומת chok_, ומוגנות ב-RLS.
+const DEFAULT_URL = 'https://ktqmwpbzcnzkhjskqisy.supabase.co';
+const DEFAULT_ANON =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0cW13cGJ6Y256a2hqc2txaXN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxODM4OTgsImV4cCI6MjEwNTc1OTg5OH0.uPKn4hrLk16jhDoajMjPl4OmV5j1b3bMIECVmOdhWGI';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
+export const SUPABASE_URL: string = import.meta.env.VITE_SUPABASE_URL || DEFAULT_URL;
+const anonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_ANON;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
+export const supabase = createClient(SUPABASE_URL, anonKey, {
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'chok-auth' },
 });
 
-// Auth helpers
-export async function signInWithGoogle() {
+// ---------- כניסה ----------
+
+// בודק מול השרת אם כניסה עם Google מופעלת בפרויקט. אם לא, מוצגת כניסה באימייל וסיסמה.
+export async function isGoogleEnabled(): Promise<boolean> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: anonKey } });
+    const data = await res.json();
+    return Boolean(data?.external?.google);
+  } catch {
+    return false;
+  }
+}
+
+export function signInWithGoogle() {
   return supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/`,
-    },
+    options: { redirectTo: `${window.location.origin}/` },
   });
 }
 
-export async function signOut() {
+export function signInWithPassword(email: string, password: string) {
+  return supabase.auth.signInWithPassword({ email, password });
+}
+
+export function signOut() {
   return supabase.auth.signOut();
 }
 
-export async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
-}
+// ---------- ענן: החוקים שלי ----------
 
-// Database helpers
-export async function getUserLaws(userId: string) {
+const T_USER_LAWS = 'chok_user_laws';
+const T_EXPLANATIONS = 'chok_explanations';
+
+export async function fetchCloudLaws(userId: string): Promise<SavedLaw[]> {
   const { data, error } = await supabase
-    .from('user_laws')
+    .from(T_USER_LAWS)
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
-
   if (error) throw error;
-  return data;
+  return (data ?? []).map((row) => ({ ...(row as SavedLaw), synced: true }));
 }
 
-export async function saveUserLaw(law: Record<string, unknown>) {
-  const { data, error } = await supabase
-    .from('user_laws')
-    .insert(law)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-}
-
-export async function deleteUserLaw(id: string, userId: string) {
-  const { error } = await supabase
-    .from('user_laws')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', userId);
-
+export async function upsertCloudLaw(userId: string, law: SavedLaw): Promise<void> {
+  const { synced: _synced, ...row } = law;
+  const { error } = await supabase.from(T_USER_LAWS).upsert({ ...row, user_id: userId });
   if (error) throw error;
 }
 
-export async function saveExplanation(explanation: Record<string, unknown>) {
-  const { data, error } = await supabase
-    .from('explanations')
-    .insert(explanation)
-    .select()
-    .single();
-
+export async function deleteCloudLaw(userId: string, id: string): Promise<void> {
+  const { error } = await supabase.from(T_USER_LAWS).delete().eq('id', id).eq('user_id', userId);
   if (error) throw error;
-  return data;
 }
 
-export async function getExplanations(userId: string) {
-  const { data, error } = await supabase
-    .from('explanations')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(20);
-
-  if (error) throw error;
-  return data;
+export async function saveCloudExplanation(
+  userId: string,
+  row: { phenomenon: string; matched_law_ids: string[]; explanation: string; insight: string },
+): Promise<void> {
+  await supabase.from(T_EXPLANATIONS).insert({ ...row, user_id: userId });
 }

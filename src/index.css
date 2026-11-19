@@ -5,80 +5,502 @@
 @layer base {
   html {
     direction: rtl;
-    font-family: 'Heebo', system-ui, sans-serif;
+    font-family: 'IBM Plex Sans Hebrew', system-ui, sans-serif;
   }
-
   body {
     @apply bg-white text-black antialiased;
   }
-
-  * {
-    box-sizing: border-box;
+  :focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
   }
 }
 
 @layer components {
-  /* כפתורים מרובעים — anat-standards */
+  /* כפתורים: מרובעים, בלי קו מסגרת. הצורה נקראת מהרקע, מהצל ומהתנועה */
   .btn {
-    @apply inline-flex items-center justify-center px-6 py-3 font-medium text-sm
-           transition-all duration-150 cursor-pointer select-none
-           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium
+           cursor-pointer select-none transition-all duration-150;
     border-radius: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
   }
-
+  .btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.12);
+  }
+  .btn:disabled {
+    @apply cursor-not-allowed opacity-40;
+  }
   .btn-primary {
-    @apply btn bg-black text-white hover:bg-zinc-800 active:bg-zinc-900;
+    @apply btn bg-black text-white;
+  }
+  .btn-soft {
+    @apply btn bg-zinc-100 text-black;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
   }
 
-  .btn-secondary {
-    @apply btn bg-white text-black border border-black hover:bg-zinc-50;
+  /* שורת פריט לחיצה ברשימה */
+  .row {
+    @apply block w-full cursor-pointer bg-white px-3 py-2.5 text-right transition-colors duration-150;
+  }
+  .row:hover {
+    @apply bg-zinc-100;
+  }
+  .row[aria-pressed='true'],
+  .row[aria-current='true'] {
+    @apply bg-zinc-100;
+    box-shadow: inset -3px 0 0 #000;
   }
 
-  .btn-ghost {
-    @apply btn bg-transparent text-black hover:bg-zinc-100;
+  .label {
+    @apply text-xs font-medium text-zinc-500;
   }
-
-  /* כרטיס חוק */
-  .law-card {
-    @apply bg-white border border-zinc-200 p-5 cursor-pointer
-           hover:border-black hover:shadow-sm transition-all duration-150;
+  .meta {
+    @apply text-xs text-zinc-400;
   }
-
-  /* תג תחום */
-  .domain-badge {
-    @apply inline-block px-2 py-0.5 text-xs font-medium text-white;
-  }
-
-  /* כותרת מקטע */
-  .section-title {
-    @apply text-2xl font-bold tracking-tight;
-  }
-
-  /* שדה קלט */
   .input {
-    @apply w-full border border-zinc-300 px-4 py-3 text-sm
-           focus:outline-none focus:border-black transition-colors;
+    @apply w-full bg-zinc-50 px-3 py-2.5 text-sm transition-shadow;
     border-radius: 0;
+    box-shadow: inset 0 0 0 1px #d4d4d8;
+  }
+  .input:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px #000;
+  }
+
+  /* מרקר צהוב: תובנה */
+  .marker {
+    background: linear-gradient(transparent 55%, #fde047 55%);
+    padding: 0 2px;
+    font-weight: 700;
+  }
+  .problem {
+    @apply text-red-700;
+  }
+  .solution {
+    @apply text-green-700;
   }
 }
 
-/* סרגל עליון */
+/* סרגל עליון קבוע */
 .topbar {
   position: fixed;
-  top: 0;
-  right: 0;
-  left: 0;
+  inset: 0 0 auto 0;
   z-index: 50;
-  height: 56px;
-  background: white;
-  border-bottom: 1px solid #e4e4e7;
-  display: flex;
-  align-items: center;
-  padding: 0 1.5rem;
+  background: #fff;
+  box-shadow: 0 1px 0 #e4e4e7;
+}
+.page {
+  padding-top: var(--bar);
+  min-height: 100vh;
+}
+:root {
+  --bar: 88px;
+}
+@media (min-width: 768px) {
+  :root {
+    --bar: 52px;
+  }
+  /* מסך בגודל המסך: הגלילה בתוך הטורים, לא בדף */
+  .screen {
+    height: calc(100vh - var(--bar));
+    overflow: hidden;
+  }
+  .scroll-y {
+    overflow-y: auto;
+    min-height: 0;
+  }
 }
 
-/* תוכן מתחת לסרגל */
-.page-content {
-  padding-top: 56px;
-  min-height: 100vh;
+/* מפת הקשרים */
+.map-edge {
+  fill: none;
+  stroke: #d4d4d8;
+  stroke-width: 1;
+  transition: stroke 0.25s, opacity 0.25s, stroke-width 0.25s;
+}
+.map-node {
+  cursor: pointer;
+  outline: none;
+  transition: opacity 0.25s;
+}
+.map-node text {
+  font-size: 17px;
+  fill: #18181b;
+  transition: font-weight 0.2s;
+}
+.map-node:hover text,
+.map-node.is-on text {
+  font-weight: 700;
+}
+.map-node:focus-visible text {
+  font-weight: 700;
+  text-decoration: underline;
+}
+.map-node.is-dim,
+.map-edge.is-dim {
+  opacity: 0.16;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ---------- תעודת DNA: טבלה מחזורית על נייר מעבדה ---------- */
+:root {
+  --ink: #111;
+  --paper: #fff;
+  --cell: #f4f4f5;
+  --insight: #fde047;
+  --problem: #b91c1c;
+  --solution: #15803d;
+  /* סולם טיפוגרפי לפי חתך הזהב: 16, 20, 26, 42 */
+  --fs-h1: clamp(1.75rem, 1.1rem + 1.9vw, 2.625rem);
+  --fs-h2: 1.625rem;
+  --fs-h3: 1.25rem;
+}
+.h1,
+.h2 {
+  text-wrap: balance;
+}
+.h1 {
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+}
+.h2 {
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.num {
+  font-family: 'IBM Plex Mono', 'IBM Plex Sans Hebrew', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* שלוש קופסאות המשמעות: בעיה, פתרון, תובנה */
+.box {
+  padding: 8px 10px;
+  background: var(--cell);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.box b {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+}
+.box-problem {
+  box-shadow: inset -3px 0 0 var(--problem);
+}
+.box-problem b {
+  color: var(--problem);
+}
+.box-solution {
+  box-shadow: inset -3px 0 0 var(--solution);
+}
+.box-solution b {
+  color: var(--solution);
+}
+.box-insight {
+  background: #fef9c3;
+  box-shadow: inset -3px 0 0 #eab308;
+}
+
+/* הטבלה המחזורית */
+.ptable {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+}
+@media (min-width: 768px) {
+  .ptable {
+    grid-template-columns: 124px repeat(6, minmax(0, 1fr));
+  }
+}
+.pt-head {
+  @apply cursor-pointer select-none px-1.5 py-1 text-center text-xs font-semibold transition-all duration-150;
+  background: var(--paper);
+}
+.pt-head:hover {
+  background: var(--cell);
+}
+.pt-family {
+  @apply col-span-6 cursor-pointer select-none px-2 py-1.5 text-right transition-all duration-150 md:col-span-1;
+  background: var(--paper);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.pt-family:hover,
+.pt-family[aria-pressed='true'] {
+  background: var(--ink);
+  color: #fff;
+}
+.pt-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 3px;
+  min-height: 44px;
+  padding: 3px;
+  background: var(--cell);
+  transition: background 0.2s;
+}
+.pt-cell.is-row {
+  background: #e4e4e7;
+}
+.pt-empty {
+  @apply flex w-full cursor-pointer items-center justify-center text-[11px] text-zinc-400 transition-all duration-150;
+  min-height: clamp(26px, calc((100vh - 262px) / 13), 54px);
+  background:
+    repeating-linear-gradient(135deg, transparent 0 6px, rgba(0, 0, 0, 0.045) 6px 7px);
+}
+.pt-empty:hover,
+.pt-empty[aria-pressed='true'] {
+  background: var(--insight);
+  color: #000;
+  font-weight: 600;
+}
+.tile {
+  position: relative;
+  flex: 1 1 100%;
+  height: 26px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 26px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.25s;
+  animation: settle 0.5s backwards;
+  animation-delay: calc(var(--i, 0) * 12ms);
+}
+@media (min-width: 768px) {
+  .tile {
+    flex: 1 1 calc(50% - 2px);
+    /* 13 שורות אריחים ממלאות את גובה המסך */
+    --tile: clamp(30px, calc((100vh - 262px) / 13), 54px);
+    height: var(--tile);
+    font-size: 13px;
+    line-height: var(--tile);
+  }
+}
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.22);
+}
+.tile.is-sel {
+  outline: 2px solid #000;
+  outline-offset: 1px;
+  z-index: 2;
+}
+.tile.is-dim {
+  opacity: 0.18;
+}
+.tile.is-mine {
+  background: var(--insight);
+  color: #000;
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* שכבת מוזיאון */
+.quote {
+  font-size: 1.25rem;
+  line-height: 1.5;
+  font-weight: 500;
+}
+.haiku {
+  font-size: 1.25rem;
+  line-height: 1.7;
+  font-weight: 300;
+}
+.card-link {
+  @apply block cursor-pointer bg-white p-4 text-right transition-all duration-150;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+}
+.card-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.14);
+}
+
+@media print {
+  .topbar,
+  .btn,
+  nav {
+    display: none !important;
+  }
+  .page {
+    padding-top: 0;
+  }
+}
+
+/* דף הבית: בנייד המוקד בא מיד אחרי המסר, ובמחשב טור הצד מימין והמוקד משמאל */
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 768px) {
+  .home-grid {
+    grid-template-columns: 38.2fr 61.8fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .home-intro {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .home-detail {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .home-stage {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+
+/* ---------- תרשימי המנגנון ---------- */
+.glyph .g-fill {
+  fill: var(--accent);
+}
+.glyph .g-off {
+  fill: #e4e4e7;
+}
+.glyph .g-thick {
+  stroke-width: 6;
+}
+.glyph.g-anim .g-fill {
+  animation: g-fill 0.5s backwards;
+  animation-delay: calc(var(--d) * 140ms + 200ms);
+}
+.glyph.g-anim .g-turn {
+  animation: g-turn 1.1s cubic-bezier(0.3, 0.9, 0.3, 1) backwards;
+  animation-delay: calc(var(--d) * 90ms + 150ms);
+}
+.glyph.g-anim .g-draw {
+  stroke-dasharray: 1;
+  animation: g-draw 1.2s ease-out backwards 0.2s;
+}
+.glyph.g-anim .g-pop {
+  animation: g-pop 0.35s backwards;
+  animation-delay: calc(var(--d, 8) * 140ms + 300ms);
+}
+.glyph.g-anim .g-grow {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: g-grow 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--d) * 110ms + 150ms);
+}
+.glyph.g-anim .g-thick {
+  animation: g-thick 1.2s ease-out backwards 0.3s;
+}
+@keyframes g-fill {
+  from {
+    fill: #e4e4e7;
+  }
+}
+@keyframes g-turn {
+  from {
+    transform: rotate(var(--from));
+  }
+}
+@keyframes g-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes g-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+}
+@keyframes g-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes g-thick {
+  from {
+    stroke-width: 1.75;
+  }
+}
+
+/* ---------- מסגרת התמונה של חוק ---------- */
+.frame {
+  position: relative;
+  aspect-ratio: 1;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.16), 0 10px 30px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.frame:hover,
+.frame.is-over {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18), 0 16px 40px rgba(0, 0, 0, 0.14);
+}
+.frame.is-over {
+  outline: 3px solid var(--insight);
+}
+.frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #111;
+  animation: fade 0.5s both;
+}
+.frame-mat {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 14%;
+  background:
+    linear-gradient(#f4f4f5 1px, transparent 1px) 0 0 / 100% 12.5%,
+    linear-gradient(90deg, #f4f4f5 1px, transparent 1px) 0 0 / 12.5% 100%;
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+.rise {
+  animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.pt-family:hover .pt-glyph,
+.pt-family[aria-pressed='true'] .pt-glyph {
+  filter: invert(1);
 }
