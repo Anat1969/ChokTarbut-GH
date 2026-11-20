@@ -168,7 +168,17 @@ const noSideScroll = async (page, name) => {
 
   await page.goto(`${BASE}/law/zipf-law`);
   await page.waitForSelector('.cover-title:has-text("חוק זיפ")');
-  await page.waitForSelector('.cover-mech-text'); // טקסט המנגנון על הגרפיקה
+  await page.waitForSelector('[data-slot="image"] .cover-body'); // טקסט המנגנון על לוח התמונה
+  assert.equal(await page.locator('[data-slot="image"] .cover-text button').count(), 0, 'אין כפתורים על התמונה');
+  // שום טקסט בשער לא נחתך
+  const clipped = await page.evaluate(() =>
+    [...document.querySelectorAll('.cover p, .cover h1')].filter((el) => {
+      const r = el.getBoundingClientRect();
+      const p = el.closest('.cover-panel').getBoundingClientRect();
+      return r.bottom > p.bottom + 1 || r.top < p.top - 1;
+    }).length,
+  );
+  assert.equal(clipped, 0, 'טקסט חתוך בשער');
   await page.waitForSelector('h3:has-text("אותו חוק, בתחומים שונים")'); // ההמשך, בגלילה
   // השער: לוח תמונה ולוח מנגנון. הגרפיקה נשארת תמיד, והתמונה נשמרת בענן ושורדת רענון
   await page.waitForSelector('[data-slot="graphic"] svg.glyph');

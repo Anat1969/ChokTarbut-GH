@@ -13,8 +13,8 @@ interface Props {
 }
 
 // השער של חוק, כמו שער מגזין. שני לוחות באותה קומפוזיציה: מראה גדול, והטקסט עליו בתחתית.
-//   משמאל, הגדול: התמונה, ועליה שם החוק והפרשנות הוויזואלית.
-//   מימין: הגרפיקה של המנגנון, ועליה טקסט המנגנון.
+//   משמאל, הגדול: התמונה, ועליה שלוש רמות טקסט בלבד: שם החוק, הפרשנות הוויזואלית, וטקסט המנגנון.
+//   מימין: ההגדרה, הגרפיקה של המנגנון, והכפתורים. כפתורים לא יושבים על התמונה.
 // העלאה היא גם הדבקה וגם גרירה: לחיצה, Ctrl+V, כפתור "הדבקה", או גרירת קובץ.
 export default function LawCover({ law, className = '' }: Props) {
   const image = useLawImage(law.id);
@@ -107,72 +107,10 @@ export default function LawCover({ law, className = '' }: Props) {
             </p>
           )}
           {prompt && <p className="cover-lead">{prompt.idea}</p>}
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            <button className="cover-btn is-main" onClick={copy}>
-              העתקת הפרומפט
-            </button>
-            <button className="cover-btn" onClick={paste} disabled={busy}>
-              הדבקת תמונה
-            </button>
-            <button className="cover-btn" onClick={() => input.current?.click()} disabled={busy}>
-              {has ? 'החלפת התמונה' : 'בחירת קובץ'}
-            </button>
-            <button className="cover-btn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-              {open ? 'הסתרת הפרומפט' : 'הצגת הפרומפט'}
-            </button>
-            {has &&
-              (confirm ? (
-                <>
-                  <button
-                    className="cover-btn !bg-red-600 !text-white"
-                    onClick={async () => {
-                      setConfirm(false);
-                      try {
-                        await removeImage(law.id);
-                        say('השער רוקן. התמונה עצמה נשארת שמורה בענן.');
-                      } catch {
-                        say('הריקון נכשל, כי הענן לא זמין כרגע. נסי שוב בעוד דקה.', true);
-                      }
-                    }}
-                  >
-                    כן, לרוקן
-                  </button>
-                  <button className="cover-btn" onClick={() => setConfirm(false)}>
-                    ביטול
-                  </button>
-                </>
-              ) : (
-                <button className="cover-btn" onClick={() => setConfirm(true)}>
-                  ריקון השער
-                </button>
-              ))}
-            {image.previous && !has && (
-              <button
-                className="cover-btn !bg-yellow-300 !text-black"
-                onClick={async () => {
-                  try {
-                    await restoreImage(law.id);
-                    say('התמונה הוחזרה.');
-                  } catch {
-                    say('ההחזרה נכשלה, כי הענן לא זמין כרגע. נסי שוב בעוד דקה.', true);
-                  }
-                }}
-              >
-                החזרת התמונה
-              </button>
-            )}
-          </div>
-          {note && (
-            <p className={`cover-note ${note.bad ? 'is-bad' : ''}`} role="status">
-              {note.text}
-            </p>
-          )}
-          {has && !note && <p className="cover-note">{image.local ? 'התמונה שמורה במכשיר הזה בלבד' : 'התמונה שמורה בענן'}</p>}
-          {open && prompt && (
-            <p className="mt-2 max-h-28 select-all overflow-auto bg-white p-3 text-xs leading-relaxed text-black" dir="rtl">
-              {fullPrompt(prompt)}
-            </p>
-          )}
+          <p className="cover-body">
+            <span className="cover-kicker">המנגנון{family ? ` · ${family.name}` : ''}</span>
+            {law.mechanism}
+          </p>
         </div>
         <input
           ref={input}
@@ -186,7 +124,7 @@ export default function LawCover({ law, className = '' }: Props) {
         />
       </section>
 
-      {/* לוח המנגנון: אותה קומפוזיציה. הגרפיקה גדולה, והטקסט עליה בתחתית */}
+      {/* לוח המנגנון: הגדרה, גרפיקה, וכלי התמונה */}
       <section className="cover-panel cover-mech" data-slot="graphic">
         <div className="cover-top">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -200,9 +138,73 @@ export default function LawCover({ law, className = '' }: Props) {
         <div className="cover-glyph">
           <FamilyGlyph key={law.id} family={FAMILY_OF[law.id]} color={domainColor(law.domain[0])} animate className="h-full w-full" />
         </div>
-        <div className="cover-text">
-          <p className="cover-kicker">המנגנון{family ? ` · ${family.name}` : ''}</p>
-          <p className="cover-mech-text">{law.mechanism}</p>
+        <div className="cover-tools">
+        <div className="flex flex-wrap gap-1.5">
+          <button className="cover-btn is-main" onClick={copy}>
+            העתקת הפרומפט
+          </button>
+          <button className="cover-btn" onClick={paste} disabled={busy}>
+            הדבקת תמונה
+          </button>
+          <button className="cover-btn" onClick={() => input.current?.click()} disabled={busy}>
+            {has ? 'החלפת התמונה' : 'בחירת קובץ'}
+          </button>
+          <button className="cover-btn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+            {open ? 'הסתרת הפרומפט' : 'הצגת הפרומפט'}
+          </button>
+          {has &&
+            (confirm ? (
+              <>
+                <button
+                  className="cover-btn !bg-red-600 !text-white"
+                  onClick={async () => {
+                    setConfirm(false);
+                    try {
+                      await removeImage(law.id);
+                      say('התמונה ירדה מהשער. היא נשארת שמורה, ואפשר להחזיר אותה.');
+                    } catch {
+                      say('הריקון נכשל, כי הענן לא זמין כרגע. נסי שוב בעוד דקה.', true);
+                    }
+                  }}
+                >
+                  כן, לרוקן
+                </button>
+                <button className="cover-btn" onClick={() => setConfirm(false)}>
+                  ביטול
+                </button>
+              </>
+            ) : (
+              <button className="cover-btn" onClick={() => setConfirm(true)}>
+                ריקון השער
+              </button>
+            ))}
+          {image.previous && !has && (
+            <button
+              className="cover-btn !bg-yellow-300 !text-black"
+              onClick={async () => {
+                try {
+                  await restoreImage(law.id);
+                  say('התמונה הוחזרה.');
+                } catch {
+                  say('ההחזרה נכשלה, כי הענן לא זמין כרגע. נסי שוב בעוד דקה.', true);
+                }
+              }}
+            >
+              החזרת התמונה
+            </button>
+          )}
+        </div>
+          {note && (
+            <p className={`cover-note ${note.bad ? 'is-bad' : ''}`} role="status">
+              {note.text}
+            </p>
+          )}
+          {has && !note && image.local && <p className="cover-note is-bad">התמונה שמורה במכשיר הזה בלבד. היא תעלה לענן בכניסה הבאה.</p>}
+          {open && prompt && (
+            <p className="mt-2 select-all bg-zinc-100 p-3 text-xs leading-relaxed" dir="rtl">
+              {fullPrompt(prompt)}
+            </p>
+          )}
         </div>
       </section>
     </header>
