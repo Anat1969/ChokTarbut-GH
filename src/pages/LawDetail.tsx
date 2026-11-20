@@ -2,7 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getLawById } from '../data/laws';
 import LawPortrait from '../components/LawPortrait';
 import LawMap from '../components/LawMap';
-import LawImage from '../components/LawImage';
+import LawCover from '../components/LawCover';
 
 export default function LawDetail() {
   const { id } = useParams<{ id: string }>();
@@ -22,22 +22,22 @@ export default function LawDetail() {
   }
 
   return (
-    <main className="page screen grid md:grid-cols-[38.2fr_61.8fr]">
-      <section className="scroll-y px-4 py-5 md:px-6">
-        <Link to="/library" className="btn-soft btn-sm mb-4">
-          לכל החוקים
-        </Link>
-        <LawPortrait law={law} />
-      </section>
-      <section className="scroll-y px-4 py-5 md:px-6" data-col="main">
-        <LawImage law={law} />
-        <div className="mt-6 hidden md:block">
+    <main className="page">
+      <LawCover law={law} />
+      <div className="grid gap-8 px-4 py-8 md:grid-cols-[38.2fr_61.8fr] md:px-9">
+        <section>
+          <LawPortrait law={law} afterCover />
+          <Link to="/library" className="btn-soft btn-sm mt-8">
+            לכל החוקים
+          </Link>
+        </section>
+        <section className="hidden md:block" data-col="main">
           <p className="meta">
             <b className="text-black">{law.name}</b> ברשת הקשרים. לחיצה על חוק אחר עוברת אליו.
           </p>
-          <LawMap selectedId={law.id} onSelect={(next) => navigate(`/law/${next}`)} className="w-full" />
-        </div>
-      </section>
+          <LawMap selectedId={law.id} onSelect={(next) => navigate(`/law/${next}`)} className="sticky top-16 w-full" />
+        </section>
+      </div>
     </main>
   );
 }
