@@ -16,11 +16,11 @@ interface Props {
   law: Law;
   onSelect?: (id: string) => void; // בחירת חוק קשור: במקום, בלי לעזוב את המסך
   brief?: boolean; // דיוקן קצר, לדף הבית
-  withImage?: boolean; // מסגרת התמונה בתוך הדיוקן (כשאין לה מקום משלה במסך)
+  afterCover?: boolean; // הדיוקן בא אחרי השער (LawCover): בלי שם, הגדרה ומנגנון, שכבר מופיעים בשער
 }
 
 // דיוקן של חוק בהקשר: מה הוא אומר, איך הוא פועל, איפה הוא מופיע, ולמה הוא קשור
-export default function LawPortrait({ law, onSelect, brief = false, withImage = false }: Props) {
+export default function LawPortrait({ law, onSelect, brief = false, afterCover = false }: Props) {
   const navigate = useNavigate();
   useSavedLaws();
   const marked = isMarked(law.id);
@@ -77,7 +77,8 @@ export default function LawPortrait({ law, onSelect, brief = false, withImage = 
 
   return (
     <article key={law.id} className="rise">
-      <div className={brief || withImage ? 'grid grid-cols-[1fr_auto] items-start gap-4' : ''}>
+      {!afterCover && (
+      <div className={brief ? 'grid grid-cols-[1fr_auto] items-start gap-4' : ''}>
         <div className="min-w-0">
         <div className="mb-2 flex flex-wrap items-center gap-1.5">
           {law.domain.map((d) => (
@@ -95,15 +96,11 @@ export default function LawPortrait({ law, onSelect, brief = false, withImage = 
         </div>
         {brief && (
           <div className="w-24 shrink-0 md:w-44">
-            <LawImage law={law} compact />
-          </div>
-        )}
-        {withImage && !brief && (
-          <div className="w-44 md:w-80">
             <LawImage law={law} />
           </div>
         )}
       </div>
+      )}
 
       {brief && (
         <p className="mt-3 grid grid-cols-[72px_1fr] items-baseline gap-3 text-sm">
@@ -116,8 +113,25 @@ export default function LawPortrait({ law, onSelect, brief = false, withImage = 
 
       {!brief && (
         <>
+          {!afterCover && (
+            <>
           <h3 className="label mb-1 mt-5">המנגנון</h3>
           <p className="text-sm leading-relaxed text-zinc-700">{law.mechanism}</p>
+
+            </>
+          )}
+
+          <h3 className={afterCover ? 'h2 mb-3' : 'label mb-2 mt-5'}>אותו חוק, בתחומים שונים</h3>
+          <ul className={afterCover ? 'space-y-3' : 'space-y-2'}>
+            {law.examples.map((ex, i) => (
+              <li key={i} className={`grid grid-cols-[72px_1fr] items-baseline gap-3 ${afterCover ? 'text-base' : 'text-sm'}`}>
+                <span>
+                  <DomainBadge domain={ex.domain} />
+                </span>
+                <span className="leading-relaxed text-zinc-700">{ex.description}</span>
+              </li>
+            ))}
+          </ul>
 
           {quote && (
             <figure className="mt-5 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,.12)]">
@@ -131,17 +145,6 @@ export default function LawPortrait({ law, onSelect, brief = false, withImage = 
             </figure>
           )}
 
-          <h3 className="label mb-2 mt-5">אותו חוק, בתחומים שונים</h3>
-          <ul className="space-y-2">
-            {law.examples.map((ex, i) => (
-              <li key={i} className="grid grid-cols-[72px_1fr] items-baseline gap-3 text-sm">
-                <span>
-                  <DomainBadge domain={ex.domain} />
-                </span>
-                <span className="leading-relaxed text-zinc-700">{ex.description}</span>
-              </li>
-            ))}
-          </ul>
         </>
       )}
 

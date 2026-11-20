@@ -130,7 +130,7 @@ const noSideScroll = async (page, name) => {
   await page.waitForSelector('h2:has-text("הדבקה וסף")'); // ברירת המחדל: לפי משפחת מנגנון
   await page.getByRole('button', { name: 'לפי חוזק ראיות' }).click();
   await page.locator('button.row', { hasText: 'פרדוקס בראס' }).click();
-  await page.waitForSelector('article h2:has-text("פרדוקס בראס")');
+  await page.waitForSelector('.cover-title:has-text("פרדוקס בראס")');
   await page.getByRole('button', { name: 'גלי קשרים מפתיעים' }).click();
   await page.waitForSelector('text=אפקט רשת');
   await page.getByRole('button', { name: 'סמני לחוקים שלי' }).click();
@@ -167,10 +167,12 @@ const noSideScroll = async (page, name) => {
   await page.waitForSelector('h3:has-text("חוק בדיקה")');
 
   await page.goto(`${BASE}/law/zipf-law`);
-  await page.waitForSelector('h2:has-text("חוק זיפ")');
-  // שתי מסגרות: הגרפיקה נשארת תמיד, והתמונה במקום משלה. התמונה נשמרת בענן ושורדת רענון
+  await page.waitForSelector('.cover-title:has-text("חוק זיפ")');
+  await page.waitForSelector('.cover-mech-text'); // טקסט המנגנון על הגרפיקה
+  await page.waitForSelector('h3:has-text("אותו חוק, בתחומים שונים")'); // ההמשך, בגלילה
+  // השער: לוח תמונה ולוח מנגנון. הגרפיקה נשארת תמיד, והתמונה נשמרת בענן ושורדת רענון
   await page.waitForSelector('[data-slot="graphic"] svg.glyph');
-  await page.waitForSelector('[data-slot="image"].frame-empty');
+  await page.waitForSelector('[data-slot="image"].is-empty');
   await page.getByRole('button', { name: 'הצגת הפרומפט' }).click();
   await page.waitForSelector('text=Documentary realism');
   await page.locator('input[type=file]').setInputFiles({ name: 't.png', mimeType: 'image/png', buffer: TINY_PNG });
@@ -179,9 +181,9 @@ const noSideScroll = async (page, name) => {
   await page.waitForSelector('[data-slot="graphic"] svg.glyph'); // הגרפיקה לא נדרסה
   await page.reload();
   await page.waitForSelector('[data-slot="image"] img');
-  await page.getByRole('button', { name: 'ריקון המסגרת' }).click();
+  await page.getByRole('button', { name: 'ריקון השער' }).click();
   await page.getByRole('button', { name: 'כן, לרוקן' }).click();
-  await page.waitForSelector('[data-slot="image"].frame-empty');
+  await page.waitForSelector('[data-slot="image"].is-empty');
   await page.getByRole('button', { name: 'החזרת התמונה' }).click();
   await page.waitForSelector('[data-slot="image"] img');
   // אימות באפליקציות אחרות

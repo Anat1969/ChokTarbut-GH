@@ -6,6 +6,7 @@ import DomainFilter from '../components/DomainFilter';
 import { domainColor } from '../components/DomainBadge';
 import Evidence from '../components/Evidence';
 import LawPortrait from '../components/LawPortrait';
+import LawCover from '../components/LawCover';
 import { FAMILIES, FAMILY_OF } from '../data/families';
 import type { Domain, Law } from '../types';
 
@@ -151,9 +152,10 @@ export default function Library() {
         </div>
       </section>
 
-      <section className="scroll-y hidden bg-zinc-50 px-8 py-6 md:block">
-        <div className="max-w-2xl">
-          <LawPortrait law={law} onSelect={setSelectedId} withImage />
+      <section className="scroll-y hidden md:block" style={{ ['--cover-h' as string]: 'min(64vh, 620px)' }}>
+        <LawCover key={law.id} law={law} />
+        <div className="max-w-3xl px-9 py-7">
+          <LawPortrait law={law} onSelect={setSelectedId} afterCover />
         </div>
       </section>
     </main>
