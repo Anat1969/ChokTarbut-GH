@@ -1,4 +1,6 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
+import { getLawById } from '../data/laws';
+import ArticleSheet from './ArticleSheet';
 import { subscribeArticles, getArticle, saveArticle } from '../lib/articles';
 import { draftArticle } from '../lib/ai';
 import ArticleBody, { parseArticle } from './ArticleBody';
@@ -18,6 +20,9 @@ export default function ArticleTab({ lawId, lawName, editable = true }: Props) {
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState('');
 
+  const [printing, setPrinting] = useState(false);
+  const donePrinting = useCallback(() => setPrinting(false), []);
+  const law = getLawById(lawId);
   const [drafting, setDrafting] = useState(false);
   const [byAi, setByAi] = useState(false);
 
@@ -113,11 +118,17 @@ export default function ArticleTab({ lawId, lawName, editable = true }: Props) {
       <h2 className="h2">{article.title}</h2>
       <ArticleBody article={article} />
       <ArticleFindings lawId={lawId} />
+      {printing && law && <ArticleSheet law={law} article={article} onDone={donePrinting} />}
       {editable && (
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button className="btn-soft btn-sm" onClick={startEdit}>
             עריכת הכתבה
           </button>
+          {law && (
+            <button className="btn-soft btn-sm" onClick={() => setPrinting(true)} disabled={printing}>
+              הדפסה על דף אחד
+            </button>
+          )}
           {note && (
             <span className="meta" role="status">
               {note}

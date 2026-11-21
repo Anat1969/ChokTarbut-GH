@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { subscribeArticles, getArticlesMap, refreshFromCloud } from '../lib/articles';
 import { SEED_ARTICLES } from '../data/articles';
@@ -9,6 +9,7 @@ import { useLawImage } from '../lib/images';
 import { domainColor, domainInk } from '../components/DomainBadge';
 import FamilyGlyph from '../components/FamilyGlyph';
 import ArticleFindings from '../components/ArticleFindings';
+import ArticleSheet from '../components/ArticleSheet';
 import ArticleBody, { parseArticle, type ParsedArticle } from '../components/ArticleBody';
 import type { Law } from '../types';
 
@@ -27,6 +28,8 @@ export default function Articles() {
   const map = useSyncExternalStore(subscribeArticles, getArticlesMap);
   const [params, setParams] = useSearchParams();
   const reader = useRef<HTMLElement>(null);
+  const [printing, setPrinting] = useState(false);
+  const donePrinting = useCallback(() => setPrinting(false), []);
 
   // רק כתבות של חוקים מהמאגר, בסדר התחומים של הטבלה
   const groups = useMemo(() => {
@@ -128,6 +131,9 @@ export default function Articles() {
           <Link to={`/law/${open.law.id}`} className="btn-primary btn-sm">
             לחוק המלא
           </Link>
+          <button className="btn-soft btn-sm" onClick={() => setPrinting(true)} disabled={printing}>
+            הדפסה על דף אחד
+          </button>
           <Link to={`/law/${open.law.id}?tab=article`} className="btn-soft btn-sm">
             עריכת הכתבה
           </Link>
@@ -138,6 +144,7 @@ export default function Articles() {
           )}
         </div>
       </section>
+      {printing && <ArticleSheet key={open.law.id} law={open.law} article={open.article} onDone={donePrinting} />}
     </main>
   );
 }

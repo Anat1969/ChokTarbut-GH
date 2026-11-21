@@ -167,13 +167,33 @@ ${parents.map(lawText).join('\n\n---\n\n')}
 זו השערה: נסח בזהירות, בלי להציג אותה כממצא מוכח.`
 }
 
-function correlationsPrompt(law: Record<string, unknown>, known: unknown[]): string {
+// שמות החוקים במאגר, כדי שה-AI יקשר קודם לחוק שקיים בו ולא ימציא שם דומה
+let lawNames: { at: number; names: string[] } | null = null
+async function loadLawNames(): Promise<string[]> {
+  if (lawNames && Date.now() - lawNames.at < 600000) return lawNames.names
+  try {
+    const url = Deno.env.get('SUPABASE_URL')
+    const key = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    const r = await fetch(`${url}/rest/v1/chok_laws?select=name`, { headers: { apikey: key, Authorization: `Bearer ${key}` } })
+    if (!r.ok) return lawNames?.names ?? []
+    const names = ((await r.json()) as { name: string }[]).map((l) => l.name)
+    lawNames = { at: Date.now(), names }
+    return names
+  } catch {
+    return lawNames?.names ?? []
+  }
+}
+
+function correlationsPrompt(law: Record<string, unknown>, known: unknown[], library: string[]): string {
   return `החוק:
 ${lawText(law)}
 קשרים שכבר ידועים במאגר: ${known.map((k) => s(k, 60)).join(', ') || 'אין'}
+כל החוקים שבמאגר: ${library.map((n) => s(n, 60)).join(' | ') || 'לא זמין'}
 
-המשימה: מצא 3 קשרים מפתיעים לחוקים או לעקרונות מוכרים שאינם ברשימת הקשרים הידועים, כל אחד מתחום אחר.
-- law_name: שם של חוק או עיקרון מוכר וקיים. לא ממציאים חוקים.
+המשימה: מצא 3 קשרים מפתיעים לחוקים שאינם ברשימת הקשרים הידועים, כל אחד מתחום אחר.
+קודם חפש בין החוקים שבמאגר. כשיש שם קשר אמיתי, בחר בו, וכתוב את שמו בדיוק כפי שהוא ברשימה, אות באות.
+חוק שאינו במאגר מותר רק כשאין במאגר קשר טוב ממנו, ורק אם הוא חוק או עיקרון מוכר וקיים, בשמו המקובל. לכל היותר אחד כזה.
+- law_name: שם החוק. לא ממציאים חוקים, ולא משנים שם של חוק מהמאגר.
 - domain: התחום שלו.
 - shared_mechanism: משפט אחד על המנגנון העמוק המשותף, לא על דמיון שטחי.
 - surprise: משפט קצר על מה שמפתיע בקשר.
@@ -219,7 +239,7 @@ Deno.serve(async (req) => {
       schema = SCHEMAS.create
     } else if (mode === 'correlations') {
       if (!b.law || typeof b.law !== 'object') return json({ error: 'חסר חוק' }, 400)
-      prompt = correlationsPrompt(b.law as Record<string, unknown>, (Array.isArray(b.known) ? b.known : []).slice(0, 12))
+      prompt = correlationsPrompt(b.law as Record<string, unknown>, (Array.isArray(b.known) ? b.known : []).slice(0, 12), await loadLawNames())
       schema = SCHEMAS.correlations
     } else {
       return json({ error: 'mode לא מוכר' }, 400)

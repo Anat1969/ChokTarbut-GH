@@ -44,7 +44,9 @@ export default function Create() {
       .filter((l): l is Law => Boolean(l))
       .slice(0, MAX);
   });
-  const [mode, setMode] = useState<'ai' | 'manual'>('ai');
+  // חוק שה-AI הציע כקשר ואינו במאגר: נפתח כאן בניסוח ידני, עם השם ועם המקור שלו
+  const bornName = (params.get('name') ?? '').trim().slice(0, 80);
+  const [mode, setMode] = useState<'ai' | 'manual'>(bornName ? 'manual' : 'ai');
   const [domain, setDomain] = useState<Domain | null>(null);
   const [result, setResult] = useState<CreateLawResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,6 +55,7 @@ export default function Create() {
 
   // ניסוח ידני: הטיוטה נשמרת לבד
   const [draft, setDraft] = useState<Draft>(() => {
+    if (bornName) return { ...EMPTY, name: bornName };
     try {
       const stored = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null') as Draft | null;
       if (stored) return stored;
@@ -157,6 +160,10 @@ export default function Create() {
       examples: draft.example.trim() ? [{ domain: draft.domains[0], description: draft.example.trim() }] : [],
       tags: [],
       parent_law_ids: selected.map((l) => l.id),
+      why_novel:
+        bornName && draft.name.trim() === bornName
+          ? `המקור: ה-AI הציע את החוק בחיפוש קשרים מפתיעים ל"${selected[0]?.name ?? ''}". ענת ניסחה אותו. הוא לא אומת מול מקור מחקרי.`
+          : undefined,
       family: draft.family || undefined,
       created_at: new Date().toISOString(),
     });

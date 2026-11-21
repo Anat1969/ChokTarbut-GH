@@ -308,7 +308,7 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
                 <div className="mb-0.5 flex items-center gap-2">
                   <DomainBadge domain={c.domain} />
                   <span>
-                    <FoundLaw name={c.law_name} bornFrom={law.name} savedAt={savedLinks?.saved_at} />
+                    <FoundLaw name={c.law_name} bornFrom={law.name} fromId={law.id} savedAt={savedLinks?.saved_at} />
                   </span>
                 </div>
                 <p className="leading-relaxed text-zinc-700">
