@@ -10,6 +10,7 @@ import LawDetail from './pages/LawDetail';
 import Explain from './pages/Explain';
 import Create from './pages/Create';
 import MyLaws from './pages/MyLaws';
+import Articles from './pages/Articles';
 import type { User } from './types';
 
 function ScrollTop() {
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/explain" element={<Explain user={user} />} />
         <Route path="/create" element={<Create />} />
         <Route path="/my-laws" element={<MyLaws user={user} />} />
+        <Route path="/articles" element={<Articles />} />
         <Route path="*" element={<Home />} />
       </Routes>
     </BrowserRouter>

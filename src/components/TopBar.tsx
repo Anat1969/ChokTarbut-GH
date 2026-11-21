@@ -8,6 +8,7 @@ const NAV = [
   { to: '/explain', label: 'הסבר' },
   { to: '/create', label: 'צור' },
   { to: '/my-laws', label: 'החוקים שלי' },
+  { to: '/articles', label: 'כתבות' },
 ];
 
 export default function TopBar({ user }: { user: User | null }) {

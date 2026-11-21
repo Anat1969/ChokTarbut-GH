@@ -86,6 +86,11 @@ export function getArticle(lawId: string): string {
   return cache[lawId] ?? '';
 }
 
+/** מחזיר את כל המפה — לשימוש בעמוד הכתבות */
+export function getArticlesMap(): Record<string, string> {
+  return cache;
+}
+
 /** שמירה: localStorage מיידי, Supabase ב-background */
 export async function saveArticle(lawId: string, text: string): Promise<void> {
   cache = { ...cache, [lawId]: text };
