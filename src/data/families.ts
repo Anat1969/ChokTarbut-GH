@@ -128,6 +128,14 @@ export const FAMILY_OF: Record<string, FamilyId> = {
   'induced-demand': 'dilemma',
   'tragedy-of-commons': 'dilemma',
   'goodhart-law': 'dilemma',
+
+  // חוקי מדע: אחד לכל משפחה
+  'paradigm-shift': 'contagion',
+  'multiple-discovery': 'swarm',
+  'team-size-law': 'scale',
+  'eroom-law': 'limit',
+  'lotka-law': 'skew',
+  'file-drawer': 'dilemma',
 };
 
 export const FAMILY_BY_ID: Record<FamilyId, Family> = Object.fromEntries(FAMILIES.map((f) => [f.id, f])) as Record<FamilyId, Family>;
@@ -182,6 +190,12 @@ export const SHORT_NAME: Record<string, string> = {
   'broken-windows': 'חלונות',
   'matthew-effect': 'מתיו',
   'parkinson-law': 'פרקינסון',
+  'paradigm-shift': 'פרדיגמה',
+  'multiple-discovery': 'תגלית',
+  'team-size-law': 'צוות',
+  'eroom-law': 'ארום',
+  'lotka-law': 'לוטקה',
+  'file-drawer': 'מגירה',
 };
 
 // ציטוטים מהמקור, מילה במילה. התרגום לעברית חופשי.
@@ -231,6 +245,15 @@ export const QUOTES: Quote[] = [
     byHe: 'מרילין סטראת׳רן, בניסוח חוק גודהארט',
     work: "'Improving ratings': audit in the British University system",
     year: 1997,
+  },
+  {
+    lawId: 'paradigm-shift',
+    text: 'A new scientific truth does not triumph by convincing its opponents and making them see the light, but rather because its opponents eventually die, and a new generation grows up that is familiar with it.',
+    he: 'אמת מדעית חדשה לא מנצחת כי היא משכנעת את מתנגדיה, אלא כי הם מתים בסופו של דבר, וגדל דור חדש שמכיר אותה.',
+    by: 'Max Planck',
+    byHe: 'מקס פלאנק',
+    work: 'Scientific Autobiography and Other Papers',
+    year: 1949,
   },
 ];
 

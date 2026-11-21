@@ -1,10 +1,11 @@
 // מאגר חוקי התנהגות — Epoch 409
 // מקור: מגזין Epoch גיליון 409, נובמבר 2026
 // 11 חוקים שחולצו מתצלומי המגזין
-// אחריהם: 10 חוקי עיר ותרבות, ו-20 חוקים קלאסיים מהמאגר הראשוני (laws-classic.ts)
+// אחריהם: 10 חוקי עיר ותרבות, 20 חוקים קלאסיים מהמאגר הראשוני (laws-classic.ts), ו-6 חוקי מדע (laws-science.ts)
 
 import type { Domain, Law } from '../types';
 import { CLASSIC_LAWS } from './laws-classic';
+import { SCIENCE_LAWS } from './laws-science';
 export type { Domain, Law, Example } from '../types';
 
 export const DOMAIN_COLORS: Record<Domain, string> = {
@@ -551,13 +552,14 @@ export const INITIAL_LAWS: Law[] = [
     id: 'matthew-effect',
     name: 'אפקט מתיו',
     name_en: 'Matthew Effect',
-    domain: ['תרבות', 'חברה', 'כלכלה'],
+    domain: ['תרבות', 'חברה', 'כלכלה', 'מדע'],
     definition: 'מי שיש לו יקבל עוד: יתרון ראשוני קטן מושך אליו משאבים והכרה, והפער גדל מעצמו.',
     mechanism: 'יתרון מצטבר. תשומת לב, כסף וקשרים זורמים אל מי שכבר בולט, כי בולטות היא האות הזול ביותר לאיכות.',
     examples: [
       { domain: 'תרבות', description: 'מדען מפורסם מקבל את רוב הקרדיט על תגלית משותפת, ושיר שנכנס למצעד מושמע עוד' },
       { domain: 'עיר', description: 'רחוב שכבר מצליח מושך אליו עוד עסקים, והרחוב הסמוך מתרוקן' },
       { domain: 'כלכלה', description: 'הון מניב תשואה, והתשואה מגדילה את ההון' },
+      { domain: 'מדע', description: 'חוקר מוכר מקבל את רוב ההכרה על מאמר משותף, גם כשחוקר צעיר עשה את רוב העבודה' },
     ],
     evidence_strength: 4,
     correlations: ['pareto-principle', 'zipf-law', 'information-cascade', 'metcalfe-law'],
@@ -587,6 +589,7 @@ export const INITIAL_LAWS: Law[] = [
 
   // === 20 החוקים הקלאסיים מהמאגר הראשוני (src/data/laws-classic.ts) ===
   ...CLASSIC_LAWS,
+  ...SCIENCE_LAWS,
 ];
 
 export function getLawsByDomain(domain: Domain): Law[] {
