@@ -43,6 +43,7 @@ const cloud = [];
 // ענן מדומה לתיקים ולחוקים שלי: הטבלאות chok_field_cases ו-chok_my_laws, והפונקציות במסד
 const cloudCases = new Map();
 const cloudLaws = new Map();
+const cloudArticles = new Map();
 
 const browser = await chromium.launch();
 const requests = [];
@@ -88,6 +89,15 @@ async function open(viewport) {
       const c = cloudCases.get(b.p_id);
       if (c) c.deleted = true;
     }
+    await route.fulfill({ status: 204, body: '' });
+  });
+  await page.route('**/rest/v1/chok_articles*', (route) =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify([...cloudArticles].map(([law_id, text]) => ({ law_id, text }))) }),
+  );
+  await page.route('**/rest/v1/rpc/chok_article_save', async (route) => {
+    const b = JSON.parse(route.request().postData() ?? '{}');
+    requests.push('article-save');
+    cloudArticles.set(b.p_law_id, b.p_text);
     await route.fulfill({ status: 204, body: '' });
   });
   await page.route('**/rest/v1/chok_my_laws*', (route) =>
@@ -272,6 +282,22 @@ const noSideScroll = async (page, name) => {
   await page.getByRole('button', { name: 'מצאי אפליקציות שמאמתות' }).click();
   await page.waitForSelector('a:has-text("אפליקציית בדיקה")');
   await shot(page, 'law-desktop');
+  // כתבות: כתבה לכל תחום, שני טורים, ושמירה דרך הפונקציה בענן
+  await page.goto(`${BASE}/articles`);
+  assert.equal(await page.locator('button.row').count(), 7, 'כתבה אחת לכל אחד משבעת התחומים');
+  await page.locator('button.row', { hasText: 'עוד כביש, יותר פקק' }).click();
+  await page.waitForURL('**/articles?law=braess-paradox');
+  await page.waitForSelector('h2:has-text("עוד כביש, יותר פקק")');
+  assert.equal(await page.locator('[data-col="main"] .article-insight').count(), 3, 'תובנה בסוף כל פרק');
+  await shot(page, 'articles-desktop');
+  await page.getByRole('link', { name: 'עריכת הכתבה' }).click();
+  await page.getByRole('button', { name: 'עריכת הכתבה' }).click();
+  await page.locator('textarea').fill('כותרת בדיקה\n\n## פרק\nשורה.\n\n**תובנה.**');
+  await page.getByRole('button', { name: 'שמירה' }).click();
+  await page.waitForSelector('text=נשמר בענן.');
+  await page.goto(`${BASE}/articles?law=braess-paradox`);
+  await page.waitForSelector('h2:has-text("כותרת בדיקה")');
+
   await page.goto(`${BASE}/law/not-a-law`);
   await page.waitForSelector('text=החוק הזה לא נמצא במאגר');
 
@@ -280,14 +306,14 @@ const noSideScroll = async (page, name) => {
   assert.equal(await page.locator('input[type="password"]').count(), 0, 'אין שום בקשת כניסה');
   await shot(page, 'menu-desktop');
 
-  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'case-save', 'correlations', 'create', 'draft', 'explain', 'image-clear', 'image-restore', 'image-upload', 'law-remove', 'law-save']);
+  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'article-save', 'case-save', 'correlations', 'create', 'draft', 'explain', 'image-clear', 'image-restore', 'image-upload', 'law-remove', 'law-save']);
   assert.deepEqual(errors, [], 'אין שגיאות בדפדפן');
 }
 
 // ---------- נייד ----------
 {
   const { page, errors } = await open({ width: 390, height: 844 });
-  for (const [path, name] of [['/', 'home'], ['/library', 'library'], ['/explain', 'explain'], ['/create', 'create'], ['/my-laws', 'mylaws'], ['/law/dunbar-number', 'law']]) {
+  for (const [path, name] of [['/', 'home'], ['/library', 'library'], ['/explain', 'explain'], ['/create', 'create'], ['/my-laws', 'mylaws'], ['/articles', 'articles'], ['/law/dunbar-number', 'law']]) {
     await page.goto(BASE + path);
     await page.waitForSelector('main');
     await noSideScroll(page, name);
