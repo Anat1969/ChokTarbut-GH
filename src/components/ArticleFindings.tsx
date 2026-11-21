@@ -27,7 +27,7 @@ export default function ArticleFindings({ lawId }: { lawId: string }) {
           <ul className="mt-3 space-y-2">
             {links!.correlations.map((c, i) => (
               <li key={i}>
-                <FoundLaw name={c.law_name} bornFrom={lawName} savedAt={links!.saved_at} /> <span className="meta">({c.domain})</span>
+                <FoundLaw name={c.law_name} bornFrom={lawName} fromId={lawId} savedAt={links!.saved_at} /> <span className="meta">({c.domain})</span>
                 <span className="block text-zinc-700">
                   <RichText text={c.shared_mechanism} />
                 </span>

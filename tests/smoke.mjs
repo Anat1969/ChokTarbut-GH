@@ -312,6 +312,24 @@ const noSideScroll = async (page, name) => {
     await other.page.waitForSelector('a[href="/law/zipf-law"]:has-text("חוק זיפ")');
     await other.page.goto(`${BASE}/articles?law=braess-paradox`);
     await other.page.waitForSelector('section[aria-label="מה התגלה בדרך"] >> text=אפקט רשת');
+    // הדפסה: הכתבה נכנסת לדף A4 אחד, והגופן מותאם כך שהיא לא גולשת
+    await other.page.evaluate(() => { window.print = () => { window.__printed = true; }; });
+    await other.page.getByRole('button', { name: 'הדפסה על דף אחד' }).click();
+    await other.page.waitForFunction(() => window.__printed === true);
+    const sheet = await other.page.evaluate(() => {
+      const el = document.querySelector('.a4-sheet');
+      const body = el.querySelector('.a4-body');
+      return { fits: el.scrollHeight <= el.clientHeight + 1 && body.scrollWidth <= body.clientWidth + 1, title: el.querySelector('h1').textContent };
+    });
+    assert.ok(sheet.fits, 'הכתבה נכנסת כולה לדף אחד');
+    assert.equal(sheet.title, 'עוד כביש, יותר פקק');
+    const pdf = await other.page.pdf({ preferCSSPageSize: true, printBackground: true });
+    assert.equal((pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length, 1, 'ה-PDF הוא דף אחד');
+    // חוק שלא קיים במאגר: "הפכי לחוק" פותח את הניסוח הידני עם השם ועם חוק המקור
+    await other.page.goto(`${BASE}/law/braess-paradox`);
+    await other.page.getByRole('link', { name: 'הפכי לחוק' }).click();
+    await other.page.waitForURL('**/create?with=braess-paradox&name=*');
+    assert.equal(await other.page.locator('input[value="אפקט רשת"]').count(), 1, 'השם של החוק מולא בטופס');
     await shot(other.page, 'article-findings-desktop');
     await other.ctx.close();
   }

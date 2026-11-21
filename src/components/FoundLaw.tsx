@@ -23,7 +23,17 @@ const day = (iso?: string) => {
 };
 
 // שם של חוק שה-AI הציע כקשר. חוק מהמאגר מקושר. חוק שלא קיים במאגר מסומן, עם המקור שלו: איך הוא נולד
-export default function FoundLaw({ name, bornFrom, savedAt }: { name: string; bornFrom: string; savedAt?: string }) {
+export default function FoundLaw({
+  name,
+  bornFrom,
+  fromId,
+  savedAt,
+}: {
+  name: string;
+  bornFrom: string;
+  fromId: string;
+  savedAt?: string;
+}) {
   const law = knownLaw(name);
   if (law) {
     return (
@@ -36,7 +46,10 @@ export default function FoundLaw({ name, bornFrom, savedAt }: { name: string; bo
     <>
       <b>{name}</b> <span className="found-new">לא קיים במאגר</span>
       <span className="meta block">
-        איך נולד: ה-AI הציע אותו בחיפוש קשרים מפתיעים ל"{bornFrom}"{day(savedAt)}. השם והתוכן לא אומתו מול מקור.
+        איך נולד: ה-AI הציע אותו בחיפוש קשרים מפתיעים ל"{bornFrom}"{day(savedAt)}. השם והתוכן לא אומתו מול מקור.{' '}
+        <Link to={`/create?with=${fromId}&name=${encodeURIComponent(name)}`} className="font-bold text-black underline underline-offset-2">
+          הפכי לחוק
+        </Link>
       </span>
     </>
   );

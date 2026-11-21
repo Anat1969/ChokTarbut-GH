@@ -876,3 +876,138 @@
   color: #fff;
   background: var(--problem);
 }
+
+/* ---------- הדפסת כתבה: דף A4 אחד ---------- */
+/* על המסך הגיליון נבנה מחוץ לתצוגה, בגודל הדף, כדי שאפשר יהיה למדוד אותו */
+.a4-sheet {
+  position: fixed;
+  top: 0;
+  left: -400mm;
+  box-sizing: border-box;
+  width: 210mm;
+  height: 297mm;
+  padding: 14mm 15mm 12mm;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  color: #111;
+  font-size: 12.5pt;
+  line-height: 1.55;
+}
+.a4-head {
+  display: grid;
+  grid-template-columns: 61.8fr 38.2fr;
+  gap: 8mm;
+  align-items: end;
+  padding-bottom: 5mm;
+  border-bottom: 0.4mm solid #111;
+}
+.a4-head:not(:has(figure)) {
+  grid-template-columns: 1fr;
+}
+.a4-kicker {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  font-size: 0.8em;
+  font-weight: 700;
+}
+.a4-kicker span {
+  width: 3mm;
+  height: 3mm;
+}
+.a4-sheet h1 {
+  margin-top: 2mm;
+  font-size: 2.3em;
+  font-weight: 700;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+.a4-lead {
+  margin-top: 3mm;
+  font-size: 0.9em;
+  color: #52525b;
+}
+.a4-head figure {
+  margin: 0;
+}
+.a4-head img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #111;
+}
+.a4-head figcaption {
+  margin-top: 1mm;
+  font-size: 0.6em;
+  color: #71717a;
+}
+.a4-body {
+  flex: 1;
+  min-height: 0;
+  margin-top: 6mm;
+  columns: 2;
+  column-gap: 9mm;
+  column-fill: auto;
+}
+.a4-body section + section {
+  margin-top: 1.1em;
+}
+.a4-body h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 2.5mm;
+  font-size: 1.2em;
+  font-weight: 700;
+  break-after: avoid;
+}
+.a4-body h2 .num {
+  font-weight: 300;
+  color: #a1a1aa;
+}
+.a4-body p {
+  margin-top: 0.55em;
+}
+.a4-insight {
+  font-size: 1.12em;
+  line-height: 1.35;
+  break-inside: avoid;
+}
+.a4-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 6mm;
+  margin-top: 4mm;
+  padding-top: 2.5mm;
+  border-top: 0.2mm solid #a1a1aa;
+  font-size: 0.6em;
+  color: #71717a;
+}
+@page {
+  size: A4;
+  margin: 0;
+}
+@media print {
+  html,
+  body {
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    overflow: hidden;
+  }
+  /* בהדפסה נשאר רק הגיליון */
+  body:has(.a4-sheet) > #root {
+    display: none !important;
+  }
+  .a4-sheet {
+    position: static;
+    left: auto;
+  }
+  .a4-sheet,
+  .a4-sheet * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
