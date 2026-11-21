@@ -542,8 +542,8 @@
 @media (min-width: 768px) {
   .cover {
     /* המנגנון מימין, והתמונה הגדולה משמאל. הגובה הוא מינימום: טקסט ארוך מגדיל את השער ולא נחתך */
-    grid-template-columns: 38.2fr 61.8fr;
-    min-height: max(480px, var(--cover-h, calc(100vh - var(--bar))));
+    /* לוח התמונה ריבועי, 1:1, כמו התמונות שעולות אליו. הרוחב שלו נקבע כך שהריבוע נכנס בגובה המסך */
+    grid-template-columns: minmax(0, 1fr) min(61.8%, max(480px, var(--cover-h, calc(100vh - var(--bar)))));
   }
   .cover-mech {
     order: 1;
@@ -561,15 +561,11 @@
 }
 .cover-image {
   justify-content: flex-end;
-  min-height: 100vw; /* בנייד: לוח ריבועי */
+  aspect-ratio: 1 / 1; /* המסגרת ריבועית בכל מסך. טקסט ארוך מגדיל אותה, והתמונה נשארת שלמה */
+  align-self: start;
   background: repeating-linear-gradient(135deg, #fafafa 0 10px, #f1f1f2 10px 11px);
   color: #111;
   transition: box-shadow 0.2s;
-}
-@media (min-width: 768px) {
-  .cover-image {
-    min-height: 0;
-  }
 }
 .cover-image.has-image {
   background: #111;
@@ -583,7 +579,8 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain; /* התמונה לא נחתכת אף פעם */
+  object-position: top;
   animation: fade 0.6s both;
 }
 .cover-hint {

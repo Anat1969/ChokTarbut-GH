@@ -90,8 +90,8 @@ const noSideScroll = async (page, name) => {
 
   await page.goto(BASE);
   await page.waitForSelector('[aria-label="הטבלה המחזורית של ההתנהגות"]');
-  assert.equal(await page.locator('button.tile').count(), 80, '80 אריחים: כל חוק בכל תחום שבו הוא נצפה');
-  assert.equal(await page.locator('.pt-empty').count(), 13, '13 משבצות ריקות');
+  assert.equal(await page.locator('button.tile').count(), 93, '93 אריחים: כל חוק בכל תחום שבו הוא נצפה');
+  assert.equal(await page.locator('.pt-empty').count(), 7, '7 משבצות ריקות');
   const fits = await page.evaluate(() => {
     const t = document.querySelector('.ptable').getBoundingClientRect();
     return t.bottom <= window.innerHeight && t.left >= 0;
@@ -104,7 +104,7 @@ const noSideScroll = async (page, name) => {
   await page.locator('.pt-family', { hasText: 'גודל וסקייל' }).click();
   await page.waitForSelector('text=עיר גדולה אינה עיר קטנה מוגדלת');
   await page.getByRole('button', { name: 'רשת קשרים' }).click();
-  assert.equal(await page.locator('.map-node').count(), 41, '41 חוקים ברשת');
+  assert.equal(await page.locator('.map-node').count(), 47, '47 חוקים ברשת');
   await page.getByRole('button', { name: 'טבלה', exact: true }).click();
   // משבצת ריקה מובילה למחולל, עם יעד
   await page.getByRole('button', { name: 'משבצת ריקה: פרט מול כלל בספורט' }).click();
@@ -123,7 +123,7 @@ const noSideScroll = async (page, name) => {
   await shot(page, 'create-manual');
   await page.goto(BASE);
   await page.waitForSelector('.tile.is-mine:has-text("חוק ידני")');
-  assert.equal(await page.locator('.pt-empty').count(), 12, 'המשבצת התמלאה');
+  assert.equal(await page.locator('.pt-empty').count(), 6, 'המשבצת התמלאה');
 
   await page.getByRole('link', { name: 'גלה', exact: true }).first().click();
   await page.waitForURL('**/library');
