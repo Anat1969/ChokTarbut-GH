@@ -63,8 +63,10 @@ export function initFindings() {
     });
 }
 
-export function saveFinding(lawId: string, kind: FindingKind, data: unknown) {
+// לכל ממצא נשמר גם מתי הוא נולד, כדי שאפשר יהיה להציג את המקור שלו
+export function saveFinding(lawId: string, kind: FindingKind, found: object) {
   const k = key(lawId, kind);
+  const data = { ...found, saved_at: new Date().toISOString() };
   cache = { ...cache, [k]: data };
   write(LS_KEY, cache);
   setPending(k, true);

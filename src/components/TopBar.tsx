@@ -4,6 +4,7 @@ import { useSavedLaws } from '../lib/store';
 import type { User } from '../types';
 
 const NAV = [
+  { to: '/open', label: 'פתיחה' },
   { to: '/library', label: 'גלה' },
   { to: '/explain', label: 'הסבר' },
   { to: '/create', label: 'צור' },
@@ -66,7 +67,7 @@ function NavItems({ saved }: { saved: number }) {
           key={to}
           to={to}
           className={({ isActive }) =>
-            `px-3 py-1.5 text-sm transition-colors hover:bg-zinc-100 ${isActive ? 'bg-zinc-100 font-bold' : ''}`
+            `whitespace-nowrap px-2 py-1.5 text-sm transition-colors md:px-3 hover:bg-zinc-100 ${isActive ? 'bg-zinc-100 font-bold' : ''}`
           }
         >
           {label}

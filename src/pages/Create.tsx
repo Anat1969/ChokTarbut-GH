@@ -309,7 +309,7 @@ export default function Create() {
                       נסחי גרסה אחרת
                     </button>
                     {saved && (
-                      <Link to="/" className="btn-soft">
+                      <Link to="/open" className="btn-soft">
                         לראות אותו בטבלה
                       </Link>
                     )}
@@ -407,7 +407,7 @@ export default function Create() {
               {manualSaved && (
                 <p className="solution text-sm" role="status">
                   "{manualSaved}" נשמר, ומופיע בטבלה באריח צהוב.{' '}
-                  <Link to="/" className="font-bold underline">
+                  <Link to="/open" className="font-bold underline">
                     לטבלה
                   </Link>
                 </p>

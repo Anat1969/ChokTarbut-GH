@@ -32,7 +32,10 @@ const MOCK = {
     by: 'gemini',
   },
   correlations: {
-    correlations: [{ law_name: 'אפקט רשת', domain: 'כלכלה', shared_mechanism: 'מנגנון **משותף**.', surprise: 'מפתיע.' }],
+    correlations: [
+      { law_name: 'אפקט רשת', domain: 'כלכלה', shared_mechanism: 'מנגנון **משותף**.', surprise: 'מפתיע.' },
+      { law_name: 'חוק זיפ', domain: 'תרבות', shared_mechanism: 'מנגנון **אחר**.', surprise: 'מפתיע.' },
+    ],
     meta_pattern: 'דפוס **על**.',
     by: 'gemini',
   },
@@ -143,7 +146,7 @@ const noSideScroll = async (page, name) => {
 {
   const { page, errors } = await open({ width: 1440, height: 900 });
 
-  await page.goto(BASE);
+  await page.goto(`${BASE}/open`);
   await page.waitForSelector('[aria-label="הטבלה המחזורית של ההתנהגות"]');
   assert.equal(await page.locator('button.tile').count(), 93, '93 אריחים: כל חוק בכל תחום שבו הוא נצפה');
   assert.equal(await page.locator('.pt-empty').count(), 7, '7 משבצות ריקות');
@@ -176,7 +179,7 @@ const noSideScroll = async (page, name) => {
   await page.getByRole('button', { name: 'שמרי בחוקים שלי' }).click();
   await page.waitForSelector('text="חוק ידני" נשמר');
   await shot(page, 'create-manual');
-  await page.goto(BASE);
+  await page.goto(`${BASE}/open`);
   await page.waitForSelector('.tile.is-mine:has-text("חוק ידני")');
   assert.equal(await page.locator('.pt-empty').count(), 6, 'המשבצת התמלאה');
 
@@ -223,7 +226,7 @@ const noSideScroll = async (page, name) => {
     await other.page.waitForSelector('section[aria-label="תיקים מהשטח"] li:has-text("נתיב תחבורה ציבורית")');
     await other.ctx.close();
   }
-  await page.goto(BASE);
+  await page.goto(`${BASE}/open`);
   await page.waitForSelector('[aria-label="הטבלה המחזורית של ההתנהגות"]');
   assert.ok((await page.locator('button.tile.has-cases').count()) >= 2, 'אריחים עם תיקים מסומנים בטבלה');
   await page.goto(`${BASE}/explain`);
@@ -303,6 +306,10 @@ const noSideScroll = async (page, name) => {
     await other.page.goto(`${BASE}/law/braess-paradox`);
     await other.page.waitForSelector('text=אפקט רשת');
     await other.page.waitForSelector('button:has-text("חפשי קשרים חדשים")');
+    // חוק שלא קיים במאגר מסומן, עם המקור שלו. חוק שקיים מקושר
+    assert.equal(await other.page.locator('.found-new').count(), 1, 'רק החוק שלא במאגר מסומן');
+    await other.page.waitForSelector('text=ה-AI הציע אותו בחיפוש קשרים מפתיעים ל"פרדוקס בראס"');
+    await other.page.waitForSelector('a[href="/law/zipf-law"]:has-text("חוק זיפ")');
     await other.page.goto(`${BASE}/articles?law=braess-paradox`);
     await other.page.waitForSelector('section[aria-label="מה התגלה בדרך"] >> text=אפקט רשת');
     await shot(other.page, 'article-findings-desktop');
@@ -346,10 +353,27 @@ const noSideScroll = async (page, name) => {
   assert.deepEqual(errors, [], 'אין שגיאות בדפדפן');
 }
 
+// ---------- הכריכה ----------
+{
+  const { page, errors, ctx } = await open({ width: 1440, height: 900 });
+  await page.goto(BASE);
+  await page.waitForSelector('canvas.cover-canvas');
+  await page.waitForSelector('h1.cover-verse');
+  await noSideScroll(page, 'cover');
+  await shot(page, 'cover-desktop');
+  await page.getByRole('link', { name: 'פתיחה' }).last().click();
+  await page.waitForURL('**/open');
+  await page.waitForSelector('[aria-label="הטבלה המחזורית של ההתנהגות"]');
+  await page.getByRole('link', { name: 'חוקי התנהגות' }).click();
+  await page.waitForSelector('canvas.cover-canvas');
+  assert.deepEqual(errors, [], 'אין שגיאות בכריכה');
+  await ctx.close();
+}
+
 // ---------- נייד ----------
 {
   const { page, errors } = await open({ width: 390, height: 844 });
-  for (const [path, name] of [['/', 'home'], ['/library', 'library'], ['/explain', 'explain'], ['/create', 'create'], ['/my-laws', 'mylaws'], ['/articles', 'articles'], ['/law/dunbar-number', 'law']]) {
+  for (const [path, name] of [['/', 'cover'], ['/open', 'home'], ['/library', 'library'], ['/explain', 'explain'], ['/create', 'create'], ['/my-laws', 'mylaws'], ['/articles', 'articles'], ['/law/dunbar-number', 'law']]) {
     await page.goto(BASE + path);
     await page.waitForSelector('main');
     await noSideScroll(page, name);

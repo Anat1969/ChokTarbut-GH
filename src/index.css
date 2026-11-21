@@ -814,3 +814,65 @@
   outline: 2px solid #111;
   outline-offset: 2px;
 }
+
+/* ---------- הכריכה: להקה של חוקים שמתכנסת לקו רקיע ---------- */
+.cover {
+  position: relative;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+.cover-canvas {
+  position: absolute;
+  inset: var(--bar) 0 0 0;
+  width: 100%;
+  height: calc(100% - var(--bar));
+  touch-action: pan-y;
+}
+/* הטקסט בטור הימני, והמוקד על שליש הגובה */
+.cover-text {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+  width: 100%;
+  padding: 9vh 20px 0;
+}
+.cover-text a {
+  pointer-events: auto;
+}
+@media (min-width: 768px) {
+  .cover-text {
+    width: 38.2vw;
+    margin-inline-start: 0;
+    padding: 22vh 36px 0 0;
+  }
+}
+.cover-verse {
+  white-space: nowrap;
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  line-height: 1.2;
+  animation: verse 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes verse {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.cover-count {
+  margin-top: 18px;
+  font-size: var(--fs-h3);
+  color: #71717a;
+}
+
+/* חוק שה-AI הציע ואינו במאגר: אדום, כי זו אזהרה */
+.found-new {
+  display: inline-block;
+  margin-inline-start: 6px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--problem);
+}
