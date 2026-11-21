@@ -8,6 +8,7 @@ import { promptOf } from '../data/prompts';
 import { useLawImage } from '../lib/images';
 import { domainColor, domainInk } from '../components/DomainBadge';
 import FamilyGlyph from '../components/FamilyGlyph';
+import ArticleFindings from '../components/ArticleFindings';
 import ArticleBody, { parseArticle, type ParsedArticle } from '../components/ArticleBody';
 import type { Law } from '../types';
 
@@ -190,6 +191,7 @@ function Reader({ entry }: { entry: Entry }) {
       </header>
       <div className="mt-8">
         <ArticleBody article={article} />
+        <ArticleFindings lawId={law.id} />
       </div>
     </article>
   );

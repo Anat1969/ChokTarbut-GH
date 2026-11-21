@@ -13,6 +13,7 @@ import Cases from './Cases';
 import { familyOf, quoteOf, FAMILY_OF } from '../data/families';
 import type { Law, CorrelationResult } from '../types';
 import ArticleTab from './ArticleTab';
+import { saveFinding, useFinding } from '../lib/findings';
 
 interface Props {
   law: Law;
@@ -33,6 +34,11 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
   const aiState = ai?.id === law.id ? ai : null;
   const [apps, setApps] = useState<{ id: string; data?: AppEvidence; error?: string; loading?: boolean } | null>(null);
   const appsState = apps?.id === law.id ? apps : null;
+  // מה שה-AI כבר גילה על החוק נשמר, ומופיע שוב בכל כניסה לעמוד
+  const savedLinks = useFinding<CorrelationResult>(law.id, 'correlations');
+  const savedApps = useFinding<AppEvidence>(law.id, 'apps');
+  const linksData = aiState?.data ?? savedLinks;
+  const appsData = appsState?.data ?? savedApps;
   const neighbors = NEIGHBORS[law.id].map(getLawById).filter((l): l is Law => Boolean(l));
 
   const family = familyOf(law.id);
@@ -65,7 +71,9 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
   const verify = async () => {
     setApps({ id: law.id, loading: true });
     try {
-      setApps({ id: law.id, data: await findApps(law) });
+      const data = await findApps(law);
+      setApps({ id: law.id, data });
+      saveFinding(law.id, 'apps', data);
     } catch {
       setApps({ id: law.id, error: 'ה-AI לא זמין כרגע, ולכן לא נמצאו אפליקציות מאמתות. נסי שוב בעוד דקה.' });
     }
@@ -74,7 +82,9 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
   const discover = async () => {
     setAi({ id: law.id, loading: true });
     try {
-      setAi({ id: law.id, data: await findCorrelations(law) });
+      const data = await findCorrelations(law);
+      setAi({ id: law.id, data });
+      saveFinding(law.id, 'correlations', data);
     } catch {
       setAi({ id: law.id, error: 'ה-AI לא זמין כרגע. נסי שוב בעוד דקה. הקשרים הקיימים מוצגים למעלה.' });
     }
@@ -223,7 +233,7 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
         ) : (
           <>
             <button onClick={discover} disabled={aiState?.loading} className="btn-primary">
-              {aiState?.loading ? 'מחפש קשרים...' : 'גלי קשרים מפתיעים'}
+              {aiState?.loading ? 'מחפש קשרים...' : linksData ? 'חפשי קשרים חדשים' : 'גלי קשרים מפתיעים'}
             </button>
             <Link to={`/create?with=${law.id}`} className="btn-soft">
               צרי ממנו חוק חדש
@@ -238,23 +248,23 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
       {!brief && activeTab === 'details' && (
         <section className="mt-5">
           <h3 className="label mb-1.5">אימות: איפה אפשר לבדוק את החוק באפליקציות שלך</h3>
-          {!appsState?.data && (
+          {(!appsData || appsState?.loading) && (
             <button onClick={verify} disabled={appsState?.loading} className="btn-soft">
               {appsState?.loading ? 'מחפש בתיק האפליקציות...' : 'מצאי אפליקציות שמאמתות'}
             </button>
           )}
           {appsState?.error && <p className="problem mt-2 text-sm">{appsState.error}</p>}
-          {appsState?.data && (
+          {appsData && !appsState?.loading && (
             <div className="rise bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,.12)]" aria-live="polite">
-              {appsState.data.picks.length === 0 ? (
+              {appsData.picks.length === 0 ? (
                 <p className="text-sm text-zinc-600">לא נמצאה בתיק אפליקציה שהנתונים שלה בודקים את החוק הזה.</p>
               ) : (
                 <>
                   <p className="mb-3 text-base font-bold">
-                    <RichText text={appsState.data.insight} />
+                    <RichText text={appsData.insight} />
                   </p>
                   <ol className="space-y-3">
-                    {appsState.data.picks.map((p, n) => (
+                    {appsData.picks.map((p, n) => (
                       <li key={p.id} className="grid grid-cols-[20px_1fr] gap-2 text-sm">
                         <span className="num pt-0.5 text-zinc-400">{n + 1}</span>
                         <span>
@@ -274,20 +284,25 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
                   </ol>
                 </>
               )}
-              <p className="meta mt-3">הצעה של AI לפי שם האפליקציה והתיאור שלה. הבדיקה עצמה עוד לא נעשתה.</p>
+              <p className="meta mt-3">
+                הצעה של AI לפי שם האפליקציה והתיאור שלה. הבדיקה עצמה עוד לא נעשתה. נשמר, ויופיע גם בכניסה הבאה.{' '}
+                <button className="font-bold underline underline-offset-2" onClick={verify}>
+                  חפשי שוב
+                </button>
+              </p>
             </div>
           )}
         </section>
       )}
 
       {aiState?.error && <p className="problem mt-3 text-sm">{aiState.error}</p>}
-      {aiState?.data && (
+      {linksData && !aiState?.loading && (
         <section className="mt-5 bg-zinc-50 p-4" aria-live="polite">
           <p className="mb-3 text-base font-bold">
-            <RichText text={aiState.data.meta_pattern} />
+            <RichText text={linksData.meta_pattern} />
           </p>
           <ul className="space-y-3">
-            {aiState.data.correlations.map((c, i) => (
+            {linksData.correlations.map((c, i) => (
               <li key={i} className="text-sm">
                 <div className="mb-0.5 flex items-center gap-2">
                   <DomainBadge domain={c.domain} />
@@ -302,7 +317,7 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
               </li>
             ))}
           </ul>
-          <p className="meta mt-3">נוסח בידי AI. הצעה לבדיקה, לא עובדה מהמאגר.</p>
+          <p className="meta mt-3">נוסח בידי AI. הצעה לבדיקה, לא עובדה מהמאגר. נשמר, ויופיע גם בכניסה הבאה ובכתבה.</p>
         </section>
       )}
 

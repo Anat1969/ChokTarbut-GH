@@ -44,6 +44,7 @@ const cloud = [];
 const cloudCases = new Map();
 const cloudLaws = new Map();
 const cloudArticles = new Map();
+const cloudFindings = [];
 
 const browser = await chromium.launch();
 const requests = [];
@@ -91,6 +92,15 @@ async function open(viewport) {
       const c = cloudCases.get(b.p_id);
       if (c) c.deleted = true;
     }
+    await route.fulfill({ status: 204, body: '' });
+  });
+  await page.route('**/rest/v1/chok_findings*', (route) =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify(cloudFindings) }),
+  );
+  await page.route('**/rest/v1/rpc/chok_finding_save', async (route) => {
+    const b = JSON.parse(route.request().postData() ?? '{}');
+    requests.push('finding-save');
+    cloudFindings.push({ law_id: b.p_law_id, kind: b.p_kind, data: b.p_data });
     await route.fulfill({ status: 204, body: '' });
   });
   await page.route('**/rest/v1/chok_articles*', (route) =>
@@ -284,6 +294,20 @@ const noSideScroll = async (page, name) => {
   await page.getByRole('button', { name: 'מצאי אפליקציות שמאמתות' }).click();
   await page.waitForSelector('a:has-text("אפליקציית בדיקה")');
   await shot(page, 'law-desktop');
+  // ממצאים: מה שה-AI גילה נשמר בענן, ומופיע שוב במכשיר אחר בלי ללחוץ, וגם בכתבה
+  {
+    assert.equal(cloudFindings.length, 2, 'קשרים ואפליקציות נשמרו בענן');
+    const other = await open({ width: 1440, height: 900 });
+    await other.page.goto(`${BASE}/law/zipf-law`);
+    await other.page.waitForSelector('a:has-text("אפליקציית בדיקה")');
+    await other.page.goto(`${BASE}/law/braess-paradox`);
+    await other.page.waitForSelector('text=אפקט רשת');
+    await other.page.waitForSelector('button:has-text("חפשי קשרים חדשים")');
+    await other.page.goto(`${BASE}/articles?law=braess-paradox`);
+    await other.page.waitForSelector('section[aria-label="מה התגלה בדרך"] >> text=אפקט רשת');
+    await shot(other.page, 'article-findings-desktop');
+    await other.ctx.close();
+  }
   // כתבות: כתבה לכל תחום, שני טורים, ושמירה דרך הפונקציה בענן
   await page.goto(`${BASE}/articles`);
   assert.equal(await page.locator('button.row').count(), 7, 'כתבה אחת לכל אחד משבעת התחומים');
@@ -318,7 +342,7 @@ const noSideScroll = async (page, name) => {
   assert.equal(await page.locator('input[type="password"]').count(), 0, 'אין שום בקשת כניסה');
   await shot(page, 'menu-desktop');
 
-  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'article', 'article-save', 'case-save', 'correlations', 'create', 'draft', 'explain', 'image-clear', 'image-restore', 'image-upload', 'law-remove', 'law-save']);
+  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'article', 'article-save', 'case-save', 'correlations', 'create', 'draft', 'explain', 'finding-save', 'image-clear', 'image-restore', 'image-upload', 'law-remove', 'law-save']);
   assert.deepEqual(errors, [], 'אין שגיאות בדפדפן');
 }
 

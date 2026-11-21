@@ -770,6 +770,13 @@
   line-height: 1.4;
   text-wrap: balance;
 }
+/* הפרק שה-AI הוסיף לכתבה: נפרד מגוף הכתבה, על רקע אפור */
+.article-found {
+  margin-top: 34px;
+  padding: 18px 20px;
+  background: var(--cell);
+  font-size: 15px;
+}
 /* אריח תחום ברשימת הכתבות: אותו אריח של הטבלה המחזורית */
 .article-tile {
   display: grid;
