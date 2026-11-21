@@ -64,6 +64,8 @@ async function open(viewport) {
     const out =
       body.mode === 'apps'
         ? { insight: 'אימות **ברחוב** אמיתי.', picks: [{ id: 'a1', title: 'אפליקציית בדיקה', url: 'https://example.com', proves: 'מראה **דירוג** רחובות.', experiment: 'האם הרחוב המדורג ראשון פעיל גם בערב?' }] }
+        : body.mode === 'article'
+          ? { text: 'כותרת מה-AI\n\n## התופעה\nשורה.\n\n**תובנה ראשונה.**\n\n## המנגנון\nשורה.\n\n**תובנה שנייה.**\n\n## בעיר\nשורה.\n\n**תובנה שלישית.**' }
         : { definition: 'הגדרה אוטומטית.', mechanism: 'מנגנון אוטומטי.', example: 'דוגמה מהעיר.', domains: ['עיר'], family: 'contagion' };
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify(out) });
   });
@@ -298,6 +300,16 @@ const noSideScroll = async (page, name) => {
   await page.goto(`${BASE}/articles?law=braess-paradox`);
   await page.waitForSelector('h2:has-text("כותרת בדיקה")');
 
+  // טיוטת כתבה מה-AI: נפתחת לעריכה, ונשמרת רק בלחיצה
+  await page.goto(`${BASE}/law/zipf-law?tab=article`);
+  await page.getByRole('button', { name: 'נסחי טיוטה' }).click();
+  await page.waitForSelector('text=טיוטה, נוסח בידי AI.');
+  assert.ok((await page.locator('textarea').inputValue()).startsWith('כותרת מה-AI'), 'הטיוטה נכנסה לעורך');
+  assert.equal(cloudArticles.has('zipf-law'), false, 'טיוטה לא נשמרת לבד');
+  await page.getByRole('button', { name: 'שמירה' }).click();
+  await page.waitForSelector('text=נשמר בענן.');
+  assert.equal(await page.locator('.article-insight').count(), 3);
+
   await page.goto(`${BASE}/law/not-a-law`);
   await page.waitForSelector('text=החוק הזה לא נמצא במאגר');
 
@@ -306,7 +318,7 @@ const noSideScroll = async (page, name) => {
   assert.equal(await page.locator('input[type="password"]').count(), 0, 'אין שום בקשת כניסה');
   await shot(page, 'menu-desktop');
 
-  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'article-save', 'case-save', 'correlations', 'create', 'draft', 'explain', 'image-clear', 'image-restore', 'image-upload', 'law-remove', 'law-save']);
+  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'article', 'article-save', 'case-save', 'correlations', 'create', 'draft', 'explain', 'image-clear', 'image-restore', 'image-upload', 'law-remove', 'law-save']);
   assert.deepEqual(errors, [], 'אין שגיאות בדפדפן');
 }
 

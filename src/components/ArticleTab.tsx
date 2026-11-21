@@ -1,5 +1,6 @@
 import { useState, useSyncExternalStore } from 'react';
 import { subscribeArticles, getArticle, saveArticle } from '../lib/articles';
+import { draftArticle } from '../lib/ai';
 import ArticleBody, { parseArticle } from './ArticleBody';
 
 interface Props {
@@ -16,10 +17,29 @@ export default function ArticleTab({ lawId, lawName, editable = true }: Props) {
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState('');
 
+  const [drafting, setDrafting] = useState(false);
+  const [byAi, setByAi] = useState(false);
+
   const startEdit = () => {
     setDraft(text);
+    setByAi(false);
     setEditing(true);
     setNote('');
+  };
+
+  // ה-AI מנסח טיוטה מנתוני החוק. היא נפתחת לעריכה, ונשמרת רק כשענת לוחצת "שמירה"
+  const askDraft = async () => {
+    setDrafting(true);
+    setNote('');
+    try {
+      setDraft(await draftArticle(lawId));
+      setByAi(true);
+      setEditing(true);
+    } catch {
+      setNote('ה-AI לא זמין כרגע. אפשר לכתוב ידנית, או לנסות שוב בעוד דקה.');
+    } finally {
+      setDrafting(false);
+    }
   };
 
   const handleSave = async () => {
@@ -33,6 +53,11 @@ export default function ArticleTab({ lawId, lawName, editable = true }: Props) {
   if (editing) {
     return (
       <div className="article-tab">
+        {byAi && (
+          <p className="mb-2 text-sm">
+            <span className="marker">טיוטה, נוסח בידי AI.</span> נכתבה רק מנתוני החוק במאגר. קראי ותקני לפני שמירה.
+          </p>
+        )}
         <p className="meta mb-2">
           שורה ראשונה: כותרת. <b className="text-zinc-600">## </b>פותח פרק. שורה שכולה בין{' '}
           <b className="text-zinc-600">**כוכביות**</b> היא תובנת הפרק.
@@ -63,9 +88,19 @@ export default function ArticleTab({ lawId, lawName, editable = true }: Props) {
       <div className="article-tab">
         <p className="text-sm text-zinc-500">לחוק הזה עוד אין כתבה.</p>
         {editable && (
-          <button className="btn-soft btn-sm mt-3" onClick={startEdit}>
-            כתבי כתבה
-          </button>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button className="btn-primary btn-sm" onClick={askDraft} disabled={drafting}>
+              {drafting ? 'מנסח טיוטה' : 'נסחי טיוטה'}
+            </button>
+            <button className="btn-soft btn-sm" onClick={startEdit} disabled={drafting}>
+              כתבי כתבה
+            </button>
+            {note && (
+              <span className="meta" role="status">
+                {note}
+              </span>
+            )}
+          </div>
         )}
       </div>
     );

@@ -73,6 +73,13 @@ export interface LawDraft {
   family: string;
 }
 
+// טיוטת כתבה לחוק: שלושה פרקים, רק מנתוני החוק שבמאגר. הטיוטה נפתחת לעריכה, ולא נשמרת לבד
+export async function draftArticle(lawId: string): Promise<string> {
+  const out = await plus<{ text: string }>({ mode: 'article', law_id: lawId });
+  if (!out.text?.trim()) throw new Error('תשובה ריקה');
+  return out.text;
+}
+
 // ניסוח אוטומטי של חוק משם בלבד
 export function draftLaw(name: string, parents: string[]): Promise<LawDraft> {
   return plus<LawDraft>({ mode: 'draft', name, parents });
