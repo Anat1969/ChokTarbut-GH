@@ -12,6 +12,7 @@ import FamilyCard from './FamilyCard';
 import Cases from './Cases';
 import { familyOf, quoteOf, FAMILY_OF } from '../data/families';
 import type { Law, CorrelationResult } from '../types';
+import ArticleTab from './ArticleTab';
 
 interface Props {
   law: Law;
@@ -25,6 +26,7 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
   const navigate = useNavigate();
   useSavedLaws();
   const marked = isMarked(law.id);
+  const [activeTab, setActiveTab] = useState<'details' | 'article'>('details');
   const [ai, setAi] = useState<{ id: string; data?: CorrelationResult; error?: string; loading?: boolean } | null>(null);
   const aiState = ai?.id === law.id ? ai : null;
   const [apps, setApps] = useState<{ id: string; data?: AppEvidence; error?: string; loading?: boolean } | null>(null);
@@ -113,8 +115,29 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
       )}
 
       {!brief && (
+        <div className="law-tabs mt-4 flex gap-0 border-b border-zinc-200">
+          <button
+            className={`law-tab-btn px-4 py-2 text-sm font-medium ${activeTab === 'details' ? 'law-tab-active border-b-2 border-black text-black' : 'text-zinc-500 hover:text-zinc-800'}`}
+            onClick={() => setActiveTab('details')}
+          >
+            פרטי החוק
+          </button>
+          <button
+            className={`law-tab-btn px-4 py-2 text-sm font-medium ${activeTab === 'article' ? 'law-tab-active border-b-2 border-black text-black' : 'text-zinc-500 hover:text-zinc-800'}`}
+            onClick={() => setActiveTab('article')}
+          >
+            כתבה
+          </button>
+        </div>
+      )}
+
+      {!brief && activeTab === 'article' && (
+        <ArticleTab lawId={law.id} lawName={law.name} />
+      )}
+
+      {(brief || activeTab === 'details') && (
         <>
-          {!afterCover && (
+          {!brief && !afterCover && (
             <>
           <h3 className="label mb-1 mt-5">המנגנון</h3>
           <p className="text-sm leading-relaxed text-zinc-700">{law.mechanism}</p>
@@ -157,7 +180,7 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
           <b>{family.name}</b>. <span className="text-zinc-600">{family.short}</span>
         </p>
       )}
-      {!brief && family && (
+      {!brief && activeTab === 'details' && family && (
         <div className="mt-2 bg-white p-3 shadow-[0_1px_3px_rgba(0,0,0,.12)]">
           <FamilyCard family={family} compact />
         </div>
@@ -210,7 +233,7 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
         )}
       </div>
 
-      {!brief && (
+      {!brief && activeTab === 'details' && (
         <section className="mt-5">
           <h3 className="label mb-1.5">אימות: איפה אפשר לבדוק את החוק באפליקציות שלך</h3>
           {!appsState?.data && (

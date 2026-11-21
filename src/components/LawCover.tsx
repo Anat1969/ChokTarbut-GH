@@ -5,10 +5,11 @@ import { saveImage, removeImage, restoreImage, imageFromClipboard, useLawImage }
 import DomainBadge, { domainColor } from './DomainBadge';
 import Evidence from './Evidence';
 import FamilyGlyph from './FamilyGlyph';
-import type { Law } from '../types';
+import type { Law, SavedLaw } from '../types';
 
 interface Props {
   law: Law;
+  savedLaw?: SavedLaw;
   className?: string;
 }
 
@@ -16,7 +17,7 @@ interface Props {
 //   משמאל, הגדול: התמונה, ועליה שלוש רמות טקסט בלבד: שם החוק, הפרשנות הוויזואלית, וטקסט המנגנון.
 //   מימין: ההגדרה, הגרפיקה של המנגנון, והכפתורים. כפתורים לא יושבים על התמונה.
 // העלאה היא גם הדבקה וגם גרירה: לחיצה, Ctrl+V, כפתור "הדבקה", או גרירת קובץ.
-export default function LawCover({ law, className = '' }: Props) {
+export default function LawCover({ law, savedLaw: _savedLaw, className = '' }: Props) {
   const image = useLawImage(law.id);
   const prompt = promptOf(law.id);
   const family = familyOf(law.id);
@@ -26,7 +27,13 @@ export default function LawCover({ law, className = '' }: Props) {
   const [note, setNote] = useState<{ text: string; bad?: boolean } | null>(null);
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [editingPrompt, setEditingPrompt] = useState(false);
+  const [savedCustomPrompt, setSavedCustomPrompt] = useState('');
   const has = Boolean(image.url);
+
+  // פרומפט אפקטיבי: מובנה (מהמערכת) או ידני (ממשתמש)
+  const effectivePrompt = prompt ?? (savedCustomPrompt ? { idea: law.name, scene: savedCustomPrompt } : undefined);
 
   const say = (text: string, bad = false) => setNote({ text, bad });
 
@@ -57,9 +64,9 @@ export default function LawCover({ law, className = '' }: Props) {
   };
 
   const copy = async () => {
-    if (!prompt) return;
+    if (!effectivePrompt) return;
     try {
-      await navigator.clipboard.writeText(fullPrompt(prompt));
+      await navigator.clipboard.writeText(fullPrompt(effectivePrompt));
       say('הפרומפט הועתק. הדביקי אותו במידג\'רני, ואת התמונה שתתקבל הדביקי כאן.');
     } catch {
       setOpen(true);
@@ -106,7 +113,7 @@ export default function LawCover({ law, className = '' }: Props) {
               {law.name_en}
             </p>
           )}
-          {prompt && <p className="cover-lead">{prompt.idea}</p>}
+          {effectivePrompt && <p className="cover-lead">{effectivePrompt.idea}</p>}
           <p className="cover-body">
             <span className="cover-kicker">המנגנון{family ? ` · ${family.name}` : ''}</span>
             {law.mechanism}
@@ -140,18 +147,26 @@ export default function LawCover({ law, className = '' }: Props) {
         </div>
         <div className="cover-tools">
         <div className="flex flex-wrap gap-1.5">
-          <button className="cover-btn is-main" onClick={copy}>
-            העתקת הפרומפט
-          </button>
+          {effectivePrompt ? (
+            <button className="cover-btn is-main" onClick={copy}>
+              העתקת הפרומפט
+            </button>
+          ) : (
+            <button className="cover-btn is-main" onClick={() => setEditingPrompt(true)}>
+              כתבי פרומפט
+            </button>
+          )}
           <button className="cover-btn" onClick={paste} disabled={busy}>
             הדבקת תמונה
           </button>
           <button className="cover-btn" onClick={() => input.current?.click()} disabled={busy}>
             {has ? 'החלפת התמונה' : 'בחירת קובץ'}
           </button>
-          <button className="cover-btn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-            {open ? 'הסתרת הפרומפט' : 'הצגת הפרומפט'}
-          </button>
+          {effectivePrompt && (
+            <button className="cover-btn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+              {open ? 'הסתרת הפרומפט' : 'הצגת הפרומפט'}
+            </button>
+          )}
           {has &&
             (confirm ? (
               <>
@@ -200,10 +215,43 @@ export default function LawCover({ law, className = '' }: Props) {
             </p>
           )}
           {has && !note && image.local && <p className="cover-note is-bad">התמונה שמורה במכשיר הזה בלבד. היא תעלה לענן בכניסה הבאה.</p>}
-          {open && prompt && (
+          {open && effectivePrompt && (
             <p className="mt-2 select-all bg-zinc-100 p-3 text-xs leading-relaxed" dir="rtl">
-              {fullPrompt(prompt)}
+              {fullPrompt(effectivePrompt)}
             </p>
+          )}
+          {!prompt && editingPrompt && (
+            <div className="mt-2 flex flex-col gap-1.5">
+              <textarea
+                className="w-full rounded border border-zinc-300 p-2 text-xs leading-relaxed"
+                rows={4}
+                placeholder="תארי את הסצנה שתמחיש את החוק הזה, בעברית. לאחר השמירה תוכלי להעתיק את הפרומפט המלא."
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                dir="rtl"
+              />
+              <div className="flex gap-1.5">
+                <button
+                  className="cover-btn is-main"
+                  onClick={() => {
+                    setSavedCustomPrompt(customPrompt.trim());
+                    setEditingPrompt(false);
+                    say('הפרומפט נשמר. עכשיו אפשר להעתיק ולהשתמש במידג\'רני.');
+                  }}
+                  disabled={!customPrompt.trim()}
+                >
+                  שמירה
+                </button>
+                <button className="cover-btn" onClick={() => setEditingPrompt(false)}>
+                  ביטול
+                </button>
+              </div>
+            </div>
+          )}
+          {!prompt && savedCustomPrompt && !editingPrompt && (
+            <button className="cover-btn mt-1 text-xs" onClick={() => { setCustomPrompt(savedCustomPrompt); setEditingPrompt(true); }}>
+              עריכת הפרומפט
+            </button>
           )}
         </div>
       </section>

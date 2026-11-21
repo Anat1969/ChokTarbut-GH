@@ -726,3 +726,57 @@
 .cover-note.is-bad {
   color: var(--problem);
 }
+
+/* ---- ArticleTab ---- */
+.article-tab {
+  margin-top: 20px;
+}
+.article-tab-read {
+  font-size: 14px;
+  line-height: 1.75;
+  color: #3f3f46;
+}
+.article-tab-read p {
+  margin-bottom: 12px;
+}
+.article-tab-empty {
+  font-size: 14px;
+  color: #a1a1aa;
+  padding: 20px 0;
+}
+.article-tab-textarea {
+  width: 100%;
+  min-height: 220px;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.75;
+  border: 1px solid #d4d4d8;
+  border-radius: 4px;
+  resize: vertical;
+  direction: rtl;
+  font-family: inherit;
+}
+.article-tab-textarea:focus {
+  outline: 2px solid #111;
+  outline-offset: -1px;
+}
+.article-tab-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* ---- Law tabs ---- */
+.law-tabs {
+  margin-bottom: 0;
+}
+.law-tab-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.law-tab-btn:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
