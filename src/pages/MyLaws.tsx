@@ -6,7 +6,7 @@ import DomainBadge from '../components/DomainBadge';
 import RichText from '../components/RichText';
 import type { SavedLaw, User } from '../types';
 
-export default function MyLaws({ user }: { user: User | null }) {
+export default function MyLaws(_props: { user: User | null }) {
   const laws = useSavedLaws();
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [undo, setUndo] = useState<SavedLaw | null>(null);
@@ -79,7 +79,7 @@ export default function MyLaws({ user }: { user: User | null }) {
         <span className="marker">{created.length}</span> חוקים שיצרת, ו-<span className="marker">{marked.length}</span> שסימנת.
       </h1>
       <p className="meta mt-1">
-        {user ? 'החוקים נשמרים בענן, וזמינים בכל מכשיר.' : 'החוקים נשמרים במכשיר הזה. כניסה מהתפריט שומרת אותם גם בענן.'}
+        {'החוקים נשמרים בענן מיד, בלי כניסה, וזמינים בכל מכשיר.'}
       </p>
 
       {undo && (

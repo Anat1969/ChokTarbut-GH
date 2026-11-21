@@ -1,14 +1,15 @@
 // תיקים: כל הסבר של תופעה יכול להיצמד לחוק, כמו תקדים.
-// נשמרים קודם במכשיר, ומסתנכרנים לענן כשענת מחוברת, כמו "החוקים שלי".
+// כל תיק נשמר בענן מיד, בלי התחברות (כלל ענת, 21.11.2026).
+// העותק במכשיר מוצג מיד, ותיק שלא הגיע לענן נשלח שוב בכניסה הבאה.
 // חוזק הראיות מהשטח נגזר מהתיקים, ולא נכתב ביד.
 import { useSyncExternalStore } from 'react';
 import type { Case, Verdict } from '../types';
-import { fetchCloudCases, upsertCloudCase, deleteCloudCase } from './supabase';
+import { fetchCloudCases, saveCloudCase, removeCloudCase } from './supabase';
 
 const KEY = 'chok-cases';
 const listeners = new Set<() => void>();
 let cache: Case[] = read();
-let userId: string | null = null;
+const REMOVED = 'chok-cases-removed'; // מחיקות שעוד לא הגיעו לענן
 
 function read(): Case[] {
   try {
@@ -62,12 +63,7 @@ export function fileCase(input: { law_id: string; phenomenon: string; verdict: V
     synced: false,
   };
   write([next, ...cache.filter((c) => c.id !== next.id)]);
-  if (userId) {
-    const uid = userId;
-    upsertCloudCase(uid, next)
-      .then(() => write(cache.map((c) => (c.id === next.id ? { ...c, synced: true } : c))))
-      .catch(() => undefined);
-  }
+  push(next);
   return next;
 }
 
@@ -75,22 +71,46 @@ export function findCase(lawId: string, phenomenon: string): Case | undefined {
   return cache.find((c) => c.law_id === lawId && c.phenomenon === phenomenon.trim());
 }
 
-export function removeCase(id: string) {
-  write(cache.filter((c) => c.id !== id));
-  if (userId) deleteCloudCase(userId, id).catch(() => undefined);
+function push(c: Case) {
+  saveCloudCase(c)
+    .then(() => write(cache.map((x) => (x.id === c.id ? { ...x, synced: true } : x))))
+    .catch(() => undefined);
 }
 
-// בכניסה: מעלים את מה שנשמר במכשיר, ומושכים את מה שנשמר בענן
-export async function connectCases(id: string | null) {
-  userId = id;
-  if (!id) return;
+function removedIds(): string[] {
   try {
-    const pending = cache.filter((c) => !c.synced);
-    await Promise.all(pending.map((c) => upsertCloudCase(id, c)));
-    const cloud = await fetchCloudCases(id);
-    const ids = new Set(cloud.map((c) => c.id));
-    write([...cloud, ...cache.filter((c) => !ids.has(c.id)).map((c) => ({ ...c, synced: false }))]);
+    return JSON.parse(localStorage.getItem(REMOVED) ?? '[]') as string[];
   } catch {
-    /* הענן לא זמין, או שהטבלה עוד לא קיימת: ממשיכים עם מה שבמכשיר */
+    return [];
+  }
+}
+
+function setRemoved(ids: string[]) {
+  try {
+    localStorage.setItem(REMOVED, JSON.stringify(ids));
+  } catch {
+    /* אחסון חסום */
+  }
+}
+
+export function removeCase(id: string) {
+  write(cache.filter((c) => c.id !== id));
+  setRemoved([...removedIds(), id]);
+  removeCloudCase(id)
+    .then(() => setRemoved(removedIds().filter((x) => x !== id)))
+    .catch(() => undefined);
+}
+
+// בפתיחת האפליקציה: שולחים מה שלא הגיע לענן, ומושכים את כל התיקים מהענן
+export async function syncCases() {
+  try {
+    await Promise.all(removedIds().map((id) => removeCloudCase(id).then(() => setRemoved(removedIds().filter((x) => x !== id)))));
+    await Promise.all(cache.filter((c) => !c.synced).map((c) => saveCloudCase(c)));
+    const cloud = await fetchCloudCases();
+    const ids = new Set(cloud.map((c) => c.id));
+    const gone = new Set(removedIds());
+    write([...cloud.filter((c) => !gone.has(c.id)), ...cache.filter((c) => !ids.has(c.id)).map((c) => ({ ...c, synced: false }))]);
+  } catch {
+    /* הענן לא זמין: ממשיכים עם מה שבמכשיר, וננסה שוב בפתיחה הבאה */
   }
 }
