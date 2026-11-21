@@ -14,6 +14,7 @@ import { familyOf, quoteOf, FAMILY_OF } from '../data/families';
 import type { Law, CorrelationResult } from '../types';
 import ArticleTab from './ArticleTab';
 import { saveFinding, useFinding } from '../lib/findings';
+import FoundLaw from './FoundLaw';
 
 interface Props {
   law: Law;
@@ -35,7 +36,7 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
   const [apps, setApps] = useState<{ id: string; data?: AppEvidence; error?: string; loading?: boolean } | null>(null);
   const appsState = apps?.id === law.id ? apps : null;
   // מה שה-AI כבר גילה על החוק נשמר, ומופיע שוב בכל כניסה לעמוד
-  const savedLinks = useFinding<CorrelationResult>(law.id, 'correlations');
+  const savedLinks = useFinding<CorrelationResult & { saved_at?: string }>(law.id, 'correlations');
   const savedApps = useFinding<AppEvidence>(law.id, 'apps');
   const linksData = aiState?.data ?? savedLinks;
   const appsData = appsState?.data ?? savedApps;
@@ -306,7 +307,9 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
               <li key={i} className="text-sm">
                 <div className="mb-0.5 flex items-center gap-2">
                   <DomainBadge domain={c.domain} />
-                  <b>{c.law_name}</b>
+                  <span>
+                    <FoundLaw name={c.law_name} bornFrom={law.name} savedAt={savedLinks?.saved_at} />
+                  </span>
                 </div>
                 <p className="leading-relaxed text-zinc-700">
                   <RichText text={c.shared_mechanism} />

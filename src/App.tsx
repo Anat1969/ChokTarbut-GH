@@ -5,6 +5,7 @@ import { syncLaws } from './lib/store';
 import { syncCases } from './lib/cases';
 import TopBar from './components/TopBar';
 import Home from './pages/Home';
+import Cover from './pages/Cover';
 import Library from './pages/Library';
 import LawDetail from './pages/LawDetail';
 import Explain from './pages/Explain';
@@ -46,14 +47,15 @@ export default function App() {
       <ScrollTop />
       <TopBar user={user} />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Cover />} />
+        <Route path="/open" element={<Home />} />
         <Route path="/library" element={<Library />} />
         <Route path="/law/:id" element={<LawDetail />} />
         <Route path="/explain" element={<Explain user={user} />} />
         <Route path="/create" element={<Create />} />
         <Route path="/my-laws" element={<MyLaws user={user} />} />
         <Route path="/articles" element={<Articles />} />
-        <Route path="*" element={<Home />} />
+        <Route path="*" element={<Cover />} />
       </Routes>
     </BrowserRouter>
   );

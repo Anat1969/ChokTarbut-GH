@@ -1,12 +1,15 @@
 import { useFinding } from '../lib/findings';
 import RichText from './RichText';
+import FoundLaw from './FoundLaw';
+import { getLawById } from '../data/laws';
 import type { AppEvidence } from '../lib/ai';
 import type { CorrelationResult } from '../types';
 
 // הפרק האחרון של כתבה: מה שה-AI גילה על החוק במסך החוק, ונשמר.
 // מופיע רק אם יש ממצא. זו הצעה לבדיקה, ולכן הוא מסומן ונפרד מגוף הכתבה.
 export default function ArticleFindings({ lawId }: { lawId: string }) {
-  const links = useFinding<CorrelationResult>(lawId, 'correlations');
+  const links = useFinding<CorrelationResult & { saved_at?: string }>(lawId, 'correlations');
+  const lawName = getLawById(lawId)?.name ?? lawId;
   const apps = useFinding<AppEvidence>(lawId, 'apps');
   const hasLinks = Boolean(links?.correlations?.length);
   const hasApps = Boolean(apps?.picks?.length);
@@ -24,7 +27,7 @@ export default function ArticleFindings({ lawId }: { lawId: string }) {
           <ul className="mt-3 space-y-2">
             {links!.correlations.map((c, i) => (
               <li key={i}>
-                <b>{c.law_name}</b> <span className="meta">({c.domain})</span>
+                <FoundLaw name={c.law_name} bornFrom={lawName} savedAt={links!.saved_at} /> <span className="meta">({c.domain})</span>
                 <span className="block text-zinc-700">
                   <RichText text={c.shared_mechanism} />
                 </span>
