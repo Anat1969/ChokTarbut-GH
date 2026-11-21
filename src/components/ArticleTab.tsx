@@ -1,5 +1,6 @@
 import { useState, useSyncExternalStore } from 'react';
 import { subscribeArticles, getArticle, saveArticle } from '../lib/articles';
+import ArticleBody, { parseArticle } from './ArticleBody';
 
 interface Props {
   lawId: string;
@@ -7,6 +8,7 @@ interface Props {
   editable?: boolean;
 }
 
+// הכתבה של חוק אחד: קריאה, ועריכה במקום
 export default function ArticleTab({ lawId, lawName, editable = true }: Props) {
   const text = useSyncExternalStore(subscribeArticles, () => getArticle(lawId));
   const [editing, setEditing] = useState(false);
@@ -14,87 +16,76 @@ export default function ArticleTab({ lawId, lawName, editable = true }: Props) {
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState('');
 
-  function startEdit() {
+  const startEdit = () => {
     setDraft(text);
     setEditing(true);
     setNote('');
-  }
+  };
 
-  async function handleSave() {
+  const handleSave = async () => {
     setSaving(true);
-    try {
-      await saveArticle(lawId, draft.trim());
-      setEditing(false);
-      setNote('נשמר');
-      setTimeout(() => setNote(''), 2000);
-    } catch {
-      setNote('שגיאה בשמירה');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function handleCancel() {
+    const where = await saveArticle(lawId, draft.trim());
+    setSaving(false);
     setEditing(false);
-    setDraft('');
-    setNote('');
-  }
+    setNote(where === 'cloud' ? 'נשמר בענן.' : 'נשמר במכשיר, ויישלח לענן בפתיחה הבאה.');
+  };
 
   if (editing) {
     return (
-      <div className="article-tab" dir="rtl">
+      <div className="article-tab">
+        <p className="meta mb-2">
+          שורה ראשונה: כותרת. <b className="text-zinc-600">## </b>פותח פרק. שורה שכולה בין{' '}
+          <b className="text-zinc-600">**כוכביות**</b> היא תובנת הפרק.
+        </p>
         <textarea
-          className="article-editor"
+          className="input article-editor"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={`כתבי כתבה על "${lawName}"…`}
+          placeholder={`כתבה על "${lawName}"`}
+          aria-label={`כתבה על ${lawName}`}
+          maxLength={20000}
           autoFocus
         />
-        <div className="article-actions">
-          <button
-            className="btn-primary"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? 'שומר…' : 'שמירה'}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+            {saving ? 'שומר' : 'שמירה'}
           </button>
-          <button className="btn-ghost" onClick={handleCancel} disabled={saving}>
+          <button className="btn-soft" onClick={() => setEditing(false)} disabled={saving}>
             ביטול
           </button>
-          {note && <span className="article-note">{note}</span>}
         </div>
       </div>
     );
   }
 
-  if (!text) {
+  if (!text.trim()) {
     return (
-      <div className="article-tab" dir="rtl">
-        <p className="article-empty">אין כתבה עדיין.</p>
+      <div className="article-tab">
+        <p className="text-sm text-zinc-500">לחוק הזה עוד אין כתבה.</p>
         {editable && (
-          <div className="article-actions">
-            <button className="btn-ghost" onClick={startEdit}>
-              כתבי כתבה
-            </button>
-          </div>
+          <button className="btn-soft btn-sm mt-3" onClick={startEdit}>
+            כתבי כתבה
+          </button>
         )}
       </div>
     );
   }
 
+  const article = parseArticle(text);
   return (
-    <div className="article-tab" dir="rtl">
-      <div className="article-body">
-        {text.split('\n\n').map((para, i) => (
-          <p key={i}>{para}</p>
-        ))}
-      </div>
+    <div className="article-tab">
+      <h2 className="h2">{article.title}</h2>
+      <ArticleBody article={article} />
       {editable && (
-        <div className="article-actions">
-          <button className="btn-ghost" onClick={startEdit}>
-            ערכי כתבה
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button className="btn-soft btn-sm" onClick={startEdit}>
+            עריכת הכתבה
           </button>
-          {note && <span className="article-note">{note}</span>}
+          {note && (
+            <span className="meta" role="status">
+              {note}
+            </span>
+          )}
         </div>
       )}
     </div>

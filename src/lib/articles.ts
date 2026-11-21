@@ -4,8 +4,10 @@
  */
 
 import { supabase } from './supabase';
+import { SEED_ARTICLES } from '../data/articles';
 
 const LS_KEY = 'chok-articles';
+const PENDING_KEY = 'chok-articles-pending'; // חוקים שהכתבה שלהם עוד לא הגיעה לענן
 type ArticleMap = Record<string, string>; // law_id → text
 
 // ── cache in-memory ──────────────────────────────────────────
@@ -33,6 +35,24 @@ function writeLS(map: ArticleMap) {
   }
 }
 
+function readPending(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(PENDING_KEY) ?? '[]');
+  } catch {
+    return [];
+  }
+}
+
+function setPending(lawId: string, on: boolean) {
+  try {
+    const next = readPending().filter((id) => id !== lawId);
+    if (on) next.push(lawId);
+    localStorage.setItem(PENDING_KEY, JSON.stringify(next));
+  } catch {
+    // אין אחסון במכשיר: מוותרים על הניסיון החוזר
+  }
+}
+
 // ── Supabase ─────────────────────────────────────────────────
 // הלקוח המשותף של האפליקציה. יש לו כתובת ומפתח ציבורי גם כשאין משתני סביבה ב-Vercel.
 function getClient() {
@@ -49,13 +69,12 @@ async function fetchCloud(): Promise<ArticleMap | null> {
   return Object.fromEntries(data.map((r: { law_id: string; text: string }) => [r.law_id, r.text]));
 }
 
+// כתיבה רק דרך הפונקציה chok_article_save: היא בודקת חוק ואורך, ושומרת כל גרסה ביומן.
 async function upsertCloud(lawId: string, text: string): Promise<void> {
   const sb = getClient();
   if (!sb) return;
-  await sb.from('chok_articles').upsert(
-    { law_id: lawId, text, updated_at: new Date().toISOString() },
-    { onConflict: 'law_id' }
-  );
+  const { error } = await sb.rpc('chok_article_save', { p_law_id: lawId, p_text: text });
+  if (error) throw new Error(error.message);
 }
 
 // ── public API ───────────────────────────────────────────────
@@ -64,13 +83,19 @@ async function upsertCloud(lawId: string, text: string): Promise<void> {
 function syncWithCloud(): void {
   fetchCloud().then((cloud) => {
     if (!cloud) return; // הענן לא ענה: לא נוגעים, ולא דורסים אותו בעותק מהמכשיר
-    const localOnly = Object.entries(cache).filter(
-      ([id, text]) => text.trim().length > 0 && !(id in cloud),
+    const pending = readPending();
+    // כתבה שמחכה לשליחה, וכתבה ישנה שנשמרה רק במכשיר לפני שהענן חובר
+    const toSend = Object.entries(cache).filter(
+      ([id, text]) => pending.includes(id) || (text.trim().length > 0 && !(id in cloud)),
     );
-    cache = { ...cache, ...cloud };
+    cache = { ...cache, ...cloud, ...Object.fromEntries(toSend) };
     writeLS(cache);
     notifyListeners();
-    for (const [id, text] of localOnly) void upsertCloud(id, text);
+    for (const [id, text] of toSend) {
+      upsertCloud(id, text)
+        .then(() => setPending(id, false))
+        .catch(() => {});
+    }
   });
 }
 
@@ -93,25 +118,34 @@ export function subscribeArticles(fn: () => void): () => void {
   };
 }
 
-export function getArticle(lawId: string): string {
-  return cache[lawId] ?? '';
-}
+// כתבה שנשמרה גוברת על כתבת המערכת. כתבה שרוקנו (טקסט ריק בענן) נשארת ריקה.
+let merged: ArticleMap | null = null;
+let mergedFrom: ArticleMap | null = null;
 
-/** מחזיר את כל המפה — לשימוש בעמוד הכתבות */
+/** כל הכתבות: כתבות המערכת, ועליהן מה שנשמר במכשיר ובענן */
 export function getArticlesMap(): Record<string, string> {
-  return cache;
+  if (mergedFrom !== cache || !merged) {
+    merged = { ...SEED_ARTICLES, ...cache };
+    mergedFrom = cache;
+  }
+  return merged;
 }
 
-/** שמירה: localStorage מיידי, Supabase ב-background */
-export async function saveArticle(lawId: string, text: string): Promise<void> {
+export function getArticle(lawId: string): string {
+  return getArticlesMap()[lawId] ?? '';
+}
+
+/** שמירה: במכשיר מיד, ובענן ברקע. אם הענן נכשל, הכתבה נשלחת שוב בפתיחה הבאה */
+export async function saveArticle(lawId: string, text: string): Promise<'cloud' | 'local'> {
   cache = { ...cache, [lawId]: text };
   writeLS(cache);
   notifyListeners();
-  await upsertCloud(lawId, text);
-}
-
-/** hook נוח */
-export function useArticle(lawId: string): string {
-  // שימוש ב-useSyncExternalStore — גרסה פשוטה (ללא React — להשתמש מה-component)
-  return getArticle(lawId);
+  setPending(lawId, true);
+  try {
+    await upsertCloud(lawId, text);
+    setPending(lawId, false);
+    return 'cloud';
+  } catch {
+    return 'local';
+  }
 }

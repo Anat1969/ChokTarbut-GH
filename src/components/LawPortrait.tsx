@@ -26,7 +26,9 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
   const navigate = useNavigate();
   useSavedLaws();
   const marked = isMarked(law.id);
-  const [activeTab, setActiveTab] = useState<'details' | 'article'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'article'>(() =>
+    new URLSearchParams(window.location.search).get('tab') === 'article' ? 'article' : 'details',
+  );
   const [ai, setAi] = useState<{ id: string; data?: CorrelationResult; error?: string; loading?: boolean } | null>(null);
   const aiState = ai?.id === law.id ? ai : null;
   const [apps, setApps] = useState<{ id: string; data?: AppEvidence; error?: string; loading?: boolean } | null>(null);
