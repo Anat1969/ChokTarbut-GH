@@ -91,7 +91,7 @@ const noSideScroll = async (page, name) => {
   await page.goto(BASE);
   await page.waitForSelector('[aria-label="הטבלה המחזורית של ההתנהגות"]');
   assert.equal(await page.locator('button.tile').count(), 80, '80 אריחים: כל חוק בכל תחום שבו הוא נצפה');
-  assert.equal(await page.locator('.pt-empty').count(), 7, '7 משבצות ריקות');
+  assert.equal(await page.locator('.pt-empty').count(), 13, '13 משבצות ריקות');
   const fits = await page.evaluate(() => {
     const t = document.querySelector('.ptable').getBoundingClientRect();
     return t.bottom <= window.innerHeight && t.left >= 0;
@@ -123,7 +123,7 @@ const noSideScroll = async (page, name) => {
   await shot(page, 'create-manual');
   await page.goto(BASE);
   await page.waitForSelector('.tile.is-mine:has-text("חוק ידני")');
-  assert.equal(await page.locator('.pt-empty').count(), 6, 'המשבצת התמלאה');
+  assert.equal(await page.locator('.pt-empty').count(), 12, 'המשבצת התמלאה');
 
   await page.getByRole('link', { name: 'גלה', exact: true }).first().click();
   await page.waitForURL('**/library');

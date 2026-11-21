@@ -17,6 +17,7 @@ export default {
           city: '#457B9D',
           culture: '#6A0572',
           economy: '#F4A261',
+          science: '#7A4E2D',
           psychology: '#6B4226',
           technology: '#0077B6',
           physics: '#023E8A',

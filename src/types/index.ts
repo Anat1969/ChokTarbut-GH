@@ -1,6 +1,6 @@
 // טיפוסים משותפים לכל האפליקציה
 
-export type Domain = 'ביולוגיה' | 'חברה' | 'ספורט' | 'עיר' | 'תרבות' | 'כלכלה';
+export type Domain = 'ביולוגיה' | 'חברה' | 'ספורט' | 'עיר' | 'תרבות' | 'כלכלה' | 'מדע';
 
 export interface Example {
   domain: string;
