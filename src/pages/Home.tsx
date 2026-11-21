@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { INITIAL_LAWS, getLawById } from '../data/laws';
+import { ALL_DOMAINS, INITIAL_LAWS, getLawById } from '../data/laws';
 import { FAMILIES, FAMILY_BY_ID, FAMILY_OF, QUOTES } from '../data/families';
 import { EDGES, HUB } from '../lib/graph';
 import { useSavedLaws } from '../lib/store';
@@ -72,7 +72,7 @@ export default function Home() {
               אותו מנגנון חוזר <mark className="marker bg-transparent">בתחומים רחוקים</mark>.
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-              <b className="text-black">{INITIAL_LAWS.length}</b> חוקים, מסודרים לפי <b className="text-black">6</b> תחומים ו-
+              <b className="text-black">{INITIAL_LAWS.length}</b> חוקים, מסודרים לפי <b className="text-black">{ALL_DOMAINS.length}</b> תחומים ו-
               <b className="text-black">6</b> משפחות מנגנון.
               <br />
               <b className="text-black">{EMPTY_CELLS}</b> משבצות ריקות: בכל אחת מחכה חוק שעוד לא נוסח.

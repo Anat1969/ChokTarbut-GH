@@ -14,6 +14,7 @@ export const DOMAIN_COLORS: Record<Domain, string> = {
   'עיר': '#457B9D',
   'תרבות': '#6A0572',
   'כלכלה': '#F4A261',
+  'מדע': '#7A4E2D',
 };
 
 export const INITIAL_LAWS: Law[] = [
@@ -604,4 +605,4 @@ export function getCorrelatedLaws(lawId: string): Law[] {
     .filter((l): l is Law => l !== undefined);
 }
 
-export const ALL_DOMAINS: Domain[] = ['ביולוגיה', 'חברה', 'ספורט', 'עיר', 'תרבות', 'כלכלה'];
+export const ALL_DOMAINS: Domain[] = ['ביולוגיה', 'חברה', 'ספורט', 'עיר', 'תרבות', 'כלכלה', 'מדע'];
