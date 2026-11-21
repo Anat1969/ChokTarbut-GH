@@ -2,6 +2,7 @@ import { useState, useSyncExternalStore } from 'react';
 import { subscribeArticles, getArticle, saveArticle } from '../lib/articles';
 import { draftArticle } from '../lib/ai';
 import ArticleBody, { parseArticle } from './ArticleBody';
+import ArticleFindings from './ArticleFindings';
 
 interface Props {
   lawId: string;
@@ -111,6 +112,7 @@ export default function ArticleTab({ lawId, lawName, editable = true }: Props) {
     <div className="article-tab">
       <h2 className="h2">{article.title}</h2>
       <ArticleBody article={article} />
+      <ArticleFindings lawId={lawId} />
       {editable && (
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button className="btn-soft btn-sm" onClick={startEdit}>
