@@ -143,7 +143,30 @@ const noSideScroll = async (page, name) => {
   await page.getByRole('button', { name: 'הסבירי לי' }).click();
   await page.waitForSelector('text=חוק הביקוש המושרה');
   await page.waitForSelector('mark.marker'); // מרקר בתשובת ה-AI
+  // תיקים: הכרעה על כל חוק שנמצא הופכת את התופעה לתקדים
+  await page.getByRole('group', { name: 'תיק לחוק הביקוש המושרה' }).getByRole('button', { name: 'חל כאן', exact: true }).click();
+  await page.getByRole('group', { name: 'תיק לפרדוקס בראס' }).getByRole('button', { name: 'לא חל כאן' }).click();
+  assert.equal(await page.locator('text=נשמר כתיק בחוק').count(), 2, 'שני תיקים נשמרו');
   await shot(page, 'explain-desktop');
+  await page.goto(`${BASE}/law/induced-demand`);
+  await page.waitForSelector('section[aria-label="תיקים מהשטח"] li:has-text("למה הרחבת כביש")');
+  await page.getByRole('button', { name: 'פתחי תיק' }).click();
+  await page.getByLabel('התופעה').fill('נתיב תחבורה ציבורית ברחוב הרצל');
+  await page.getByRole('radio', { name: /הובחן/ }).click();
+  await page.getByLabel('ההחלטה').fill('לא מרחיבים, מוסיפים נת"צ');
+  await page.getByRole('button', { name: 'שמרי את התיק' }).click();
+  await page.waitForSelector('text=לא מרחיבים, מוסיפים נת"צ');
+  await page.waitForSelector('section[aria-label="תיקים מהשטח"] >> text=1 הופעל');
+  await shot(page, 'law-cases');
+  await page.reload();
+  assert.equal(await page.locator('section[aria-label="תיקים מהשטח"] li').count(), 2, 'התיקים נשמרו אחרי רענון');
+  await page.goto(BASE);
+  await page.waitForSelector('[aria-label="הטבלה המחזורית של ההתנהגות"]');
+  assert.ok((await page.locator('button.tile.has-cases').count()) >= 2, 'אריחים עם תיקים מסומנים בטבלה');
+  await page.goto(`${BASE}/explain`);
+  await page.getByLabel('תיאור התופעה').fill('למה הרחבת כביש לא פותרת את הפקק?');
+  await page.getByRole('button', { name: 'הסבירי לי' }).click();
+  await page.waitForSelector('text=חוק הביקוש המושרה');
   await page.getByRole('link', { name: 'צרי חוק חדש מהחוקים האלה' }).click();
 
   await page.waitForURL('**/create?with=*');

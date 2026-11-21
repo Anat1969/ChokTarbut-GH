@@ -4,6 +4,7 @@ import { explainPhenomenon } from '../lib/ai';
 import { matchLaws } from '../lib/match';
 import { getLawById } from '../data/laws';
 import { saveCloudExplanation } from '../lib/supabase';
+import { useCases, fileCase, findCase } from '../lib/cases';
 import LawMap from '../components/LawMap';
 import DomainBadge from '../components/DomainBadge';
 import RichText from '../components/RichText';
@@ -38,6 +39,8 @@ export default function Explain({ user }: { user: User | null }) {
   const [loading, setLoading] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState(false);
+  const [asked, setAsked] = useState(''); // התופעה שהוסברה, כפי שתיכנס לתיק
+  useCases();
 
   // הטיוטה נשמרת לבד
   useEffect(() => {
@@ -56,6 +59,7 @@ export default function Explain({ user }: { user: User | null }) {
     setLoading(true);
     setNote(null);
     setResult(null);
+    setAsked(phenomenon);
     try {
       const res = await explainPhenomenon(phenomenon);
       setResult(res);
@@ -156,7 +160,9 @@ export default function Explain({ user }: { user: User | null }) {
               <b className="text-black">{matched.length}</b> חוקים מסבירים את התופעה
             </h2>
             <ul className="space-y-2">
-              {matched.map((law) => (
+              {matched.map((law) => {
+                const filed = findCase(law.id, asked);
+                return (
                 <li key={law.id}>
                   <Link to={`/law/${law.id}`} className="row bg-zinc-50">
                     <span className="mb-1 flex flex-wrap items-center gap-1.5">
@@ -169,9 +175,28 @@ export default function Explain({ user }: { user: User | null }) {
                       <RichText text={result.per_law.find((p) => p.id === law.id)?.how ?? law.definition} />
                     </span>
                   </Link>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5" role="group" aria-label={`תיק ל${law.name}`}>
+                    <button
+                      className={filed?.verdict === 'applied' ? 'btn-primary btn-sm' : 'btn-soft btn-sm'}
+                      aria-pressed={filed?.verdict === 'applied'}
+                      onClick={() => fileCase({ law_id: law.id, phenomenon: asked, verdict: 'applied' })}
+                    >
+                      חל כאן
+                    </button>
+                    <button
+                      className={filed?.verdict === 'distinguished' ? 'btn-primary btn-sm' : 'btn-soft btn-sm'}
+                      aria-pressed={filed?.verdict === 'distinguished'}
+                      onClick={() => fileCase({ law_id: law.id, phenomenon: asked, verdict: 'distinguished' })}
+                    >
+                      לא חל כאן
+                    </button>
+                    {filed && <span className="meta">נשמר כתיק בחוק</span>}
+                  </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
+            <p className="meta mt-2">הכרעה שלך הופכת את התופעה לתיק בחוק, כמו תקדים.</p>
 
             {result.additional_examples.length > 0 && (
               <>

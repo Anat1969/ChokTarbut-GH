@@ -2,6 +2,7 @@ import { ALL_DOMAINS, INITIAL_LAWS } from '../data/laws';
 import { FAMILIES, FAMILY_OF, SHORT_NAME, type FamilyId } from '../data/families';
 import { NEIGHBORS } from '../lib/graph';
 import { useSavedLaws } from '../lib/store';
+import { useCases, tally } from '../lib/cases';
 import { domainColor, domainInk } from './DomainBadge';
 import FamilyGlyph from './FamilyGlyph';
 import type { Domain } from '../types';
@@ -31,6 +32,7 @@ export const EMPTY_CELLS = CELLS.flat().filter((c) => c.length === 0).length;
 // הטבלה המחזורית של ההתנהגות. בהשראת דמיטרי מנדלייב, 1869: גם המשבצות הריקות הן מידע.
 export default function PeriodicTable({ selection, hoverId, onHover, onSelect, domain, onDomain, highlightIds }: Props) {
   const saved = useSavedLaws();
+  const cases = useCases();
   const mine = saved.filter((l) => l.kind === 'created' && l.family);
   const focusId = hoverId ?? (selection?.type === 'law' ? selection.id : null);
   const lit = new Set<string>(highlightIds ?? []);
@@ -96,17 +98,21 @@ export default function PeriodicTable({ selection, hoverId, onHover, onSelect, d
                   const home = law.domain[0] === d;
                   const dim = (lit.size > 0 && !lit.has(law.id)) || (rowOn !== null && rowOn !== f.id);
                   const sel = law.id === focusId;
+                  // עובי הקו התחתון: כמה פעמים החוק נבחן בשטח. חוק בלי תיקים נשאר דק
+                  const t = tally(cases, law.id);
                   return (
                     <button
                       key={law.id}
-                      className={`tile ${dim ? 'is-dim' : ''} ${sel ? 'is-sel' : ''}`}
+                      className={`tile ${dim ? 'is-dim' : ''} ${sel ? 'is-sel' : ''} ${t.total > 0 ? 'has-cases' : ''}`}
+                      data-cases={t.total || undefined}
                       style={{
                         ['--i' as string]: i++,
+                        ['--cases' as string]: Math.min(t.total, 4),
                         ...(home
                           ? { background: domainColor(d), color: domainInk(d) }
                           : { boxShadow: `inset 0 3px 0 ${domainColor(d)}, 0 1px 2px rgba(0,0,0,.16)` }),
                       }}
-                      title={law.name}
+                      title={t.total > 0 ? `${law.name}: ${t.applied} הופעל, ${t.distinguished} הובחן` : law.name}
                       aria-label={`${law.name}, ${f.name}, ${d}`}
                       aria-pressed={selection?.type === 'law' && selection.id === law.id}
                       onMouseEnter={() => onHover(law.id)}

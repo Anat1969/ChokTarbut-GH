@@ -77,3 +77,17 @@ export interface User {
   email: string;
   name?: string;
 }
+
+// תיק: תופעה מהשטח שנצמדה לחוק, כמו תקדים במשפט המקובל.
+// "הופעל": החוק הסביר את התופעה. "הובחן": החוק נראה רלוונטי, ולא חל כאן.
+export type Verdict = 'applied' | 'distinguished';
+
+export interface Case {
+  id: string;
+  law_id: string;
+  phenomenon: string;
+  verdict: Verdict;
+  decision?: string; // מה הוחלט או נלמד בעקבות התיק
+  created_at: string;
+  synced?: boolean;
+}

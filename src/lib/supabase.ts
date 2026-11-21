@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { SavedLaw } from '../types';
+import type { Case, SavedLaw } from '../types';
 
 // פרויקט Supabase המשותף של ענת. המפתח כאן הוא המפתח הציבורי (anon), שמותר לו להופיע בדפדפן.
 // כל הטבלאות של האפליקציה נושאות את הקידומת chok_, ומוגנות ב-RLS.
@@ -73,4 +73,29 @@ export async function saveCloudExplanation(
   row: { phenomenon: string; matched_law_ids: string[]; explanation: string; insight: string },
 ): Promise<void> {
   await supabase.from(T_EXPLANATIONS).insert({ ...row, user_id: userId });
+}
+
+// ---------- ענן: תיקים ----------
+
+const T_CASES = 'chok_cases';
+
+export async function fetchCloudCases(userId: string): Promise<Case[]> {
+  const { data, error } = await supabase
+    .from(T_CASES)
+    .select('id, law_id, phenomenon, verdict, decision, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({ ...(row as Case), decision: row.decision ?? undefined, synced: true }));
+}
+
+export async function upsertCloudCase(userId: string, c: Case): Promise<void> {
+  const { synced: _synced, ...row } = c;
+  const { error } = await supabase.from(T_CASES).upsert({ ...row, decision: row.decision ?? null, user_id: userId });
+  if (error) throw error;
+}
+
+export async function deleteCloudCase(userId: string, id: string): Promise<void> {
+  const { error } = await supabase.from(T_CASES).delete().eq('id', id).eq('user_id', userId);
+  if (error) throw error;
 }
