@@ -76,26 +76,31 @@ export async function saveCloudExplanation(
 }
 
 // ---------- ענן: תיקים ----------
+// קריאה פתוחה, וכתיבה דרך שתי פונקציות במסד. בלי התחברות (כלל ענת, 21.11.2026).
 
-const T_CASES = 'chok_cases';
-
-export async function fetchCloudCases(userId: string): Promise<Case[]> {
+export async function fetchCloudCases(): Promise<Case[]> {
   const { data, error } = await supabase
-    .from(T_CASES)
+    .from('chok_cases')
     .select('id, law_id, phenomenon, verdict, decision, created_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(2000);
   if (error) throw error;
   return (data ?? []).map((row) => ({ ...(row as Case), decision: row.decision ?? undefined, synced: true }));
 }
 
-export async function upsertCloudCase(userId: string, c: Case): Promise<void> {
-  const { synced: _synced, ...row } = c;
-  const { error } = await supabase.from(T_CASES).upsert({ ...row, decision: row.decision ?? null, user_id: userId });
+export async function saveCloudCase(c: Case): Promise<void> {
+  const { error } = await supabase.rpc('chok_case_save', {
+    p_id: c.id,
+    p_law_id: c.law_id,
+    p_phenomenon: c.phenomenon,
+    p_verdict: c.verdict,
+    p_decision: c.decision ?? null,
+    p_created_at: c.created_at,
+  });
   if (error) throw error;
 }
 
-export async function deleteCloudCase(userId: string, id: string): Promise<void> {
-  const { error } = await supabase.from(T_CASES).delete().eq('id', id).eq('user_id', userId);
+export async function removeCloudCase(id: string): Promise<void> {
+  const { error } = await supabase.rpc('chok_case_remove', { p_id: id });
   if (error) throw error;
 }

@@ -40,6 +40,8 @@ const MOCK = {
 
 // ענן מדומה לתמונות: היומן chok_images והדלי chok-images
 const cloud = [];
+// ענן מדומה לתיקים: הטבלה chok_cases והפונקציות chok_case_save / chok_case_remove
+const cloudCases = new Map();
 
 const browser = await chromium.launch();
 const requests = [];
@@ -72,6 +74,21 @@ async function open(viewport) {
   });
   await page.route('**/rest/v1/chok_images*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(cloud) }));
   await page.route('**/storage/v1/object/public/chok-images/**', (route) => route.fulfill({ contentType: 'image/png', body: TINY_PNG }));
+  await page.route('**/rest/v1/chok_cases*', (route) =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify([...cloudCases.values()].filter((c) => !c.deleted)) }),
+  );
+  await page.route('**/rest/v1/rpc/chok_case_*', async (route) => {
+    const b = JSON.parse(route.request().postData() ?? '{}');
+    if (route.request().url().includes('chok_case_save')) {
+      requests.push('case-save');
+      cloudCases.set(b.p_id, { id: b.p_id, law_id: b.p_law_id, phenomenon: b.p_phenomenon, verdict: b.p_verdict, decision: b.p_decision, created_at: b.p_created_at });
+    } else {
+      requests.push('case-remove');
+      const c = cloudCases.get(b.p_id);
+      if (c) c.deleted = true;
+    }
+    await route.fulfill({ status: 204, body: '' });
+  });
   await page.route('**/auth/v1/settings', (route) =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify({ external: { google: false } }) }),
   );
@@ -160,6 +177,14 @@ const noSideScroll = async (page, name) => {
   await shot(page, 'law-cases');
   await page.reload();
   assert.equal(await page.locator('section[aria-label="תיקים מהשטח"] li').count(), 2, 'התיקים נשמרו אחרי רענון');
+  assert.equal([...cloudCases.values()].length, 3, 'שלושת התיקים הגיעו לענן, בלי התחברות');
+  // מכשיר אחר, בלי שום דבר שמור: התיקים נמשכים מהענן
+  {
+    const other = await open({ width: 1440, height: 900 });
+    await other.page.goto(`${BASE}/law/induced-demand`);
+    await other.page.waitForSelector('section[aria-label="תיקים מהשטח"] li:has-text("נתיב תחבורה ציבורית")');
+    await other.ctx.close();
+  }
   await page.goto(BASE);
   await page.waitForSelector('[aria-label="הטבלה המחזורית של ההתנהגות"]');
   assert.ok((await page.locator('button.tile.has-cases').count()) >= 2, 'אריחים עם תיקים מסומנים בטבלה');
@@ -230,7 +255,7 @@ const noSideScroll = async (page, name) => {
   await page.waitForSelector('input[type="email"]');
   await shot(page, 'menu-desktop');
 
-  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'correlations', 'create', 'draft', 'explain', 'image-clear', 'image-restore', 'image-upload']);
+  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'case-save', 'correlations', 'create', 'draft', 'explain', 'image-clear', 'image-restore', 'image-upload']);
   assert.deepEqual(errors, [], 'אין שגיאות בדפדפן');
 }
 

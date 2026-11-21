@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { connectUser } from './lib/store';
-import { connectCases } from './lib/cases';
+import { syncCases } from './lib/cases';
 import TopBar from './components/TopBar';
 import Home from './pages/Home';
 import Library from './pages/Library';
@@ -24,12 +24,16 @@ function ScrollTop() {
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
 
+  // התיקים בענן, בלי התחברות: נמשכים בכל פתיחה
+  useEffect(() => {
+    syncCases();
+  }, []);
+
   // האפליקציה נטענת מיד. הכניסה נבדקת ברקע, ולא חוסמת את המסך.
   useEffect(() => {
     const apply = (u: { id: string; email?: string; user_metadata?: Record<string, string> } | null | undefined) => {
       setUser(u ? { id: u.id, email: u.email ?? '', name: u.user_metadata?.full_name } : null);
       connectUser(u?.id ?? null);
-      connectCases(u?.id ?? null);
     };
     supabase.auth.getSession().then(({ data }) => apply(data.session?.user));
     const { data } = supabase.auth.onAuthStateChange((_event, session) => apply(session?.user));
