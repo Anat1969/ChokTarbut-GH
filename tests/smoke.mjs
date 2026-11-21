@@ -40,8 +40,9 @@ const MOCK = {
 
 // ענן מדומה לתמונות: היומן chok_images והדלי chok-images
 const cloud = [];
-// ענן מדומה לתיקים: הטבלה chok_cases והפונקציות chok_case_save / chok_case_remove
+// ענן מדומה לתיקים ולחוקים שלי: הטבלאות chok_field_cases ו-chok_my_laws, והפונקציות במסד
 const cloudCases = new Map();
+const cloudLaws = new Map();
 
 const browser = await chromium.launch();
 const requests = [];
@@ -74,7 +75,7 @@ async function open(viewport) {
   });
   await page.route('**/rest/v1/chok_images*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(cloud) }));
   await page.route('**/storage/v1/object/public/chok-images/**', (route) => route.fulfill({ contentType: 'image/png', body: TINY_PNG }));
-  await page.route('**/rest/v1/chok_cases*', (route) =>
+  await page.route('**/rest/v1/chok_field_cases*', (route) =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify([...cloudCases.values()].filter((c) => !c.deleted)) }),
   );
   await page.route('**/rest/v1/rpc/chok_case_*', async (route) => {
@@ -86,6 +87,21 @@ async function open(viewport) {
       requests.push('case-remove');
       const c = cloudCases.get(b.p_id);
       if (c) c.deleted = true;
+    }
+    await route.fulfill({ status: 204, body: '' });
+  });
+  await page.route('**/rest/v1/chok_my_laws*', (route) =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify([...cloudLaws.values()].filter((l) => !l.deleted)) }),
+  );
+  await page.route('**/rest/v1/rpc/chok_my_law_*', async (route) => {
+    const b = JSON.parse(route.request().postData() ?? '{}');
+    if (route.request().url().includes('chok_my_law_save')) {
+      requests.push('law-save');
+      cloudLaws.set(b.p.id, { ...b.p });
+    } else {
+      requests.push('law-remove');
+      const l = cloudLaws.get(b.p_id);
+      if (l) l.deleted = true;
     }
     await route.fulfill({ status: 204, body: '' });
   });
@@ -207,6 +223,14 @@ const noSideScroll = async (page, name) => {
   await page.waitForSelector('h3:has-text("חוק בדיקה")'); // נשמר אחרי רענון
   await page.waitForSelector('h3:has-text("חוק ידני")');
   await shot(page, 'mylaws-desktop');
+  assert.ok([...cloudLaws.values()].some((l) => l.name === 'חוק בדיקה'), 'החוק שנוצר הגיע לענן, בלי התחברות');
+  // מכשיר אחר: החוקים שלי נמשכים מהענן
+  {
+    const other = await open({ width: 1440, height: 900 });
+    await other.page.goto(`${BASE}/my-laws`);
+    await other.page.waitForSelector('h3:has-text("חוק בדיקה")');
+    await other.ctx.close();
+  }
   // מחיקה: אישור לפני, וביטול אחרי
   await page.locator('li', { hasText: 'חוק בדיקה' }).getByRole('button', { name: 'מחיקה' }).click();
   await page.getByRole('button', { name: 'כן, למחוק' }).click();
@@ -252,10 +276,11 @@ const noSideScroll = async (page, name) => {
   await page.waitForSelector('text=החוק הזה לא נמצא במאגר');
 
   await page.getByRole('button', { name: 'תפריט' }).click();
-  await page.waitForSelector('input[type="email"]');
+  await page.waitForSelector('text=הכול נשמר בענן');
+  assert.equal(await page.locator('input[type="password"]').count(), 0, 'אין שום בקשת כניסה');
   await shot(page, 'menu-desktop');
 
-  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'case-save', 'correlations', 'create', 'draft', 'explain', 'image-clear', 'image-restore', 'image-upload']);
+  assert.deepEqual([...new Set(requests)].sort(), ['apps', 'case-save', 'correlations', 'create', 'draft', 'explain', 'image-clear', 'image-restore', 'image-upload', 'law-remove', 'law-save']);
   assert.deepEqual(errors, [], 'אין שגיאות בדפדפן');
 }
 

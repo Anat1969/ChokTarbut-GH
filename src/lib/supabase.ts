@@ -43,28 +43,35 @@ export function signOut() {
 }
 
 // ---------- ענן: החוקים שלי ----------
+// בלי התחברות (כלל ענת, 21.11.2026): קריאה פתוחה, וכתיבה רק דרך שתי פונקציות במסד.
 
-const T_USER_LAWS = 'chok_user_laws';
+const T_MY_LAWS = 'chok_my_laws';
 const T_EXPLANATIONS = 'chok_explanations';
 
-export async function fetchCloudLaws(userId: string): Promise<SavedLaw[]> {
+export async function fetchCloudLaws(): Promise<SavedLaw[]> {
   const { data, error } = await supabase
-    .from(T_USER_LAWS)
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .from(T_MY_LAWS)
+    .select('id, kind, name, name_en, domain, definition, mechanism, examples, tags, parent_law_ids, why_novel, family, created_at')
+    .order('created_at', { ascending: false })
+    .limit(2000);
   if (error) throw error;
-  return (data ?? []).map((row) => ({ ...(row as SavedLaw), synced: true }));
+  return (data ?? []).map((row) => ({
+    ...(row as SavedLaw),
+    name_en: row.name_en ?? undefined,
+    why_novel: row.why_novel ?? undefined,
+    family: row.family ?? undefined,
+    synced: true,
+  }));
 }
 
-export async function upsertCloudLaw(userId: string, law: SavedLaw): Promise<void> {
+export async function upsertCloudLaw(law: SavedLaw): Promise<void> {
   const { synced: _synced, ...row } = law;
-  const { error } = await supabase.from(T_USER_LAWS).upsert({ ...row, user_id: userId });
+  const { error } = await supabase.rpc('chok_my_law_save', { p: row });
   if (error) throw error;
 }
 
-export async function deleteCloudLaw(userId: string, id: string): Promise<void> {
-  const { error } = await supabase.from(T_USER_LAWS).delete().eq('id', id).eq('user_id', userId);
+export async function deleteCloudLaw(id: string): Promise<void> {
+  const { error } = await supabase.rpc('chok_my_law_remove', { p_id: id });
   if (error) throw error;
 }
 
@@ -80,7 +87,7 @@ export async function saveCloudExplanation(
 
 export async function fetchCloudCases(): Promise<Case[]> {
   const { data, error } = await supabase
-    .from('chok_cases')
+    .from('chok_field_cases')
     .select('id, law_id, phenomenon, verdict, decision, created_at')
     .order('created_at', { ascending: false })
     .limit(2000);

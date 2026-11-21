@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { isGoogleEnabled, signInWithGoogle, signInWithPassword, signOut } from '../lib/supabase';
 import { useSavedLaws } from '../lib/store';
 import type { User } from '../types';
 
@@ -46,7 +45,7 @@ export default function TopBar({ user }: { user: User | null }) {
             aria-haspopup="dialog"
             className="btn-primary btn-sm h-8"
           >
-            {user ? user.name ?? user.email.split('@')[0] : 'תפריט'}
+            תפריט
           </button>
           {open && <Menu user={user} onClose={() => setOpen(false)} />}
         </div>
@@ -77,97 +76,22 @@ function NavItems({ saved }: { saved: number }) {
   );
 }
 
-function Menu({ user, onClose }: { user: User | null; onClose: () => void }) {
-  const [google, setGoogle] = useState<boolean | null>(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [show, setShow] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user) isGoogleEnabled().then(setGoogle);
-  }, [user]);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    const { error: err } = await signInWithPassword(email.trim(), password);
-    setBusy(false);
-    if (err) setError('הכניסה נכשלה. בדקי את האימייל והסיסמה ונסי שוב.');
-    else onClose();
-  };
-
+// בלי התחברות, תמיד (כלל ענת, 21.11.2026): התפריט לא מבקש כניסה. הכול נשמר בענן מיד.
+function Menu({ onClose }: { user: User | null; onClose: () => void }) {
+  const saved = useSavedLaws();
   return (
     <div
       role="dialog"
       aria-label="תפריט"
       className="absolute left-0 top-10 z-50 w-72 bg-white p-4 shadow-[0_8px_30px_rgba(0,0,0,.18)]"
     >
-      {user ? (
-        <>
-          <p className="label mb-1">מחוברת</p>
-          <p className="mb-3 break-all text-sm">{user.email}</p>
-          <p className="meta mb-3">החוקים שלך נשמרים בענן, וזמינים בכל מכשיר.</p>
-          <button
-            className="btn-soft w-full"
-            onClick={async () => {
-              await signOut();
-              onClose();
-            }}
-          >
-            יציאה
-          </button>
-        </>
-      ) : (
-        <>
-          <p className="mb-1 text-sm font-bold">כניסה</p>
-          <p className="meta mb-3">בלי כניסה, החוקים שלך נשמרים במכשיר הזה. עם כניסה, גם בענן.</p>
-          {google === true && (
-            <button className="btn-primary mb-3 w-full" onClick={() => signInWithGoogle()}>
-              כניסה עם Google
-            </button>
-          )}
-          {google === false && (
-            <form onSubmit={submit} className="space-y-2">
-              <input
-                className="input"
-                type="email"
-                name="email"
-                autoComplete="username"
-                placeholder="אימייל"
-                dir="ltr"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <div className="flex gap-1">
-                <input
-                  className="input"
-                  type={show ? 'text' : 'password'}
-                  name="password"
-                  autoComplete="current-password"
-                  placeholder="סיסמה"
-                  dir="ltr"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button type="button" className="btn-soft btn-sm shrink-0" onClick={() => setShow((v) => !v)} aria-pressed={show}>
-                  {show ? 'הסתירי' : 'הציגי'}
-                </button>
-              </div>
-              {error && <p className="problem text-xs">{error}</p>}
-              <button className="btn-primary w-full" disabled={busy}>
-                {busy ? 'נכנסת...' : 'כניסה'}
-              </button>
-              <p className="meta">כניסה עם Google כבויה בפרויקט. הכניסה היא עם החשבון הקיים שלך.</p>
-            </form>
-          )}
-          {google === null && <p className="meta">בודק אפשרויות כניסה...</p>}
-        </>
-      )}
+      <p className="mb-1 text-sm font-bold">הכול נשמר בענן</p>
+      <p className="meta mb-3">
+        החוקים שלך והתיקים נשמרים מיד, בלי כניסה ובלי סיסמה, וזמינים בכל מכשיר.
+      </p>
+      <Link to="/my-laws" className="btn-soft w-full" onClick={onClose}>
+        החוקים שלי <span className="num">{saved.length}</span>
+      </Link>
     </div>
   );
 }
