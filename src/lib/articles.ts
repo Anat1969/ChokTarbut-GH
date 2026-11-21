@@ -3,7 +3,7 @@
  * אחסון: localStorage ראשון, Supabase ב-background
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 
 const LS_KEY = 'chok-articles';
 type ArticleMap = Record<string, string>; // law_id → text
@@ -34,20 +34,18 @@ function writeLS(map: ArticleMap) {
 }
 
 // ── Supabase ─────────────────────────────────────────────────
+// הלקוח המשותף של האפליקציה. יש לו כתובת ומפתח ציבורי גם כשאין משתני סביבה ב-Vercel.
 function getClient() {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
+  return supabase;
 }
 
-async function fetchCloud(): Promise<ArticleMap> {
+async function fetchCloud(): Promise<ArticleMap | null> {
   const sb = getClient();
-  if (!sb) return {};
+  if (!sb) return null;
   const { data, error } = await sb
     .from('chok_articles')
     .select('law_id, text');
-  if (error || !data) return {};
+  if (error || !data) return null;
   return Object.fromEntries(data.map((r: { law_id: string; text: string }) => [r.law_id, r.text]));
 }
 
@@ -62,25 +60,29 @@ async function upsertCloud(lawId: string, text: string): Promise<void> {
 
 // ── public API ───────────────────────────────────────────────
 
-/** init: קרא מ-localStorage, אז עדכן מ-Supabase ב-background */
-export function initArticles() {
-  cache = readLS();
+// מושך מהענן, ושולח לענן כתבה שנשמרה רק במכשיר.
+function syncWithCloud(): void {
   fetchCloud().then((cloud) => {
-    if (Object.keys(cloud).length === 0) return;
+    if (!cloud) return; // הענן לא ענה: לא נוגעים, ולא דורסים אותו בעותק מהמכשיר
+    const localOnly = Object.entries(cache).filter(
+      ([id, text]) => text.trim().length > 0 && !(id in cloud),
+    );
     cache = { ...cache, ...cloud };
     writeLS(cache);
     notifyListeners();
+    for (const [id, text] of localOnly) void upsertCloud(id, text);
   });
+}
+
+/** init: קרא מ-localStorage, אז עדכן מ-Supabase ב-background */
+export function initArticles() {
+  cache = readLS();
+  syncWithCloud();
 }
 
 /** רענון מפורש מ-Supabase — לשימוש בעמוד הכתבות */
 export function refreshFromCloud(): void {
-  fetchCloud().then((cloud) => {
-    if (Object.keys(cloud).length === 0) return;
-    cache = { ...cache, ...cloud };
-    writeLS(cache);
-    notifyListeners();
-  });
+  syncWithCloud();
 }
 
 /** לשימוש ב-useSyncExternalStore */
