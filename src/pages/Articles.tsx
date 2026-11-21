@@ -3,12 +3,15 @@
  * מציגה את כל הכתבות שנכתבו, עם קישור לחוק
  */
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { Link } from 'react-router-dom';
-import { subscribeArticles, getArticlesMap } from '../lib/articles';
+import { subscribeArticles, getArticlesMap, refreshFromCloud } from '../lib/articles';
 import { INITIAL_LAWS } from '../data/laws';
 
 export default function Articles() {
+  // טעינה מחדש מ-Supabase בכל כניסה לעמוד
+  useEffect(() => { refreshFromCloud(); }, []);
+
   const map = useSyncExternalStore(subscribeArticles, getArticlesMap);
   const entries = Object.entries(map).filter(([, text]) => text.trim().length > 0);
 

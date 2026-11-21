@@ -67,7 +67,16 @@ export function initArticles() {
   cache = readLS();
   fetchCloud().then((cloud) => {
     if (Object.keys(cloud).length === 0) return;
-    // מיזוג: Supabase גובר על localStorage
+    cache = { ...cache, ...cloud };
+    writeLS(cache);
+    notifyListeners();
+  });
+}
+
+/** רענון מפורש מ-Supabase — לשימוש בעמוד הכתבות */
+export function refreshFromCloud(): void {
+  fetchCloud().then((cloud) => {
+    if (Object.keys(cloud).length === 0) return;
     cache = { ...cache, ...cloud };
     writeLS(cache);
     notifyListeners();
