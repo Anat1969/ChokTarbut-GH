@@ -9,6 +9,7 @@ import DomainBadge, { domainColor } from './DomainBadge';
 import Evidence from './Evidence';
 import RichText from './RichText';
 import FamilyCard from './FamilyCard';
+import Cases from './Cases';
 import { familyOf, quoteOf, FAMILY_OF } from '../data/families';
 import type { Law, CorrelationResult } from '../types';
 
@@ -132,6 +133,8 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
               </li>
             ))}
           </ul>
+
+          {afterCover && <Cases law={law} />}
 
           {quote && (
             <figure className="mt-5 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,.12)]">

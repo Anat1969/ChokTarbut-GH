@@ -309,6 +309,14 @@
 .tile.is-dim {
   opacity: 0.18;
 }
+/* תיקים: פס שחור בתחתית האריח, עבה יותר עם כל תיק (עד ארבעה) */
+.tile.has-cases::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: calc(var(--cases) * 2px);
+  background: #000;
+}
 .tile.is-mine {
   background: var(--insight);
   color: #000;
