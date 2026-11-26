@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getLawById } from '../data/laws';
 import { useSavedLaws, removeLaw, saveLaw } from '../lib/store';
 import DomainBadge from '../components/DomainBadge';
@@ -10,6 +10,12 @@ export default function MyLaws(_props: { user: User | null }) {
   const laws = useSavedLaws();
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [undo, setUndo] = useState<SavedLaw | null>(null);
+  // ?law= מגיע מהרשת, מהספרייה או מהטבלה: החוק מסומן וגולל אל המסך
+  const [params] = useSearchParams();
+  const focus = params.get('law');
+  useEffect(() => {
+    if (focus) document.getElementById(`mine-${focus}`)?.scrollIntoView({ block: 'center' });
+  }, [focus, laws.length]);
 
   const created = laws.filter((l) => l.kind === 'created');
   const marked = laws.filter((l) => l.kind === 'marked');
@@ -21,7 +27,12 @@ export default function MyLaws(_props: { user: User | null }) {
   };
 
   const card = (law: SavedLaw) => (
-    <li key={law.id} className="bg-zinc-50 p-4">
+    <li
+      key={law.id}
+      id={`mine-${law.id}`}
+      className="bg-zinc-50 p-4"
+      style={law.id === focus ? { boxShadow: 'inset 0 0 0 3px var(--insight)' } : undefined}
+    >
       <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
         {law.domain.map((d) => (
           <DomainBadge key={d} domain={d} />
@@ -55,6 +66,11 @@ export default function MyLaws(_props: { user: User | null }) {
         </p>
       )}
       <div className="mt-3 flex gap-2">
+        {law.kind === 'created' && (
+          <Link className="btn-soft btn-sm" to={`/library?law=${law.id}`}>
+            בספרייה
+          </Link>
+        )}
         {confirmId === law.id ? (
           <>
             <button className="btn btn-sm bg-red-600 text-white" onClick={() => remove(law)}>
