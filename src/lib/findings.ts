@@ -4,7 +4,7 @@
 import { useSyncExternalStore } from 'react';
 import { supabase } from './supabase';
 
-export type FindingKind = 'correlations' | 'apps';
+export type FindingKind = 'correlations' | 'apps' | 'prompt';
 type Store = Record<string, unknown>; // "מזהה חוק:סוג" אל הממצא האחרון
 
 const LS_KEY = 'chok-findings';

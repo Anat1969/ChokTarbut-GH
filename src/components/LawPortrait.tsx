@@ -94,6 +94,26 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
 
   return (
     <article key={law.id} className="rise">
+      {law.created_by === 'anat' && (
+        // חוק שענת ניסחה: תמיד מצוין שהוא שלה, ומאילו חוקים נולד
+        <p className="mb-4 border-r-4 border-yellow-300 bg-yellow-50 px-3 py-2 text-sm leading-relaxed" data-origin>
+          <b>חוק שלך</b>, שנוצר מחוקים אחרים במאגר:{' '}
+          {law.correlations
+            .map((id) => getLawById(id))
+            .filter((p): p is Law => Boolean(p))
+            .map((p, i) => (
+              <span key={p.id}>
+                {i > 0 && ' + '}
+                <Link className="font-bold underline" to={`/law/${p.id}`}>
+                  {p.name}
+                </Link>
+              </span>
+            ))}
+          .
+          <br />
+          <span className="meta">{law.source}</span>
+        </p>
+      )}
       {!afterCover && (
       <div className={brief ? 'grid grid-cols-[1fr_auto] items-start gap-4' : ''}>
         <div className="min-w-0">
