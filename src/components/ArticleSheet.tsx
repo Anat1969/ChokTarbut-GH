@@ -53,9 +53,10 @@ export default function ArticleSheet({ law, article, onDone }: { law: Law; artic
           <p className="a4-kicker">
             <span style={{ backgroundColor: domainColor(domain) }} />
             {domain} · {law.name}
+            {law.created_by === 'anat' && ' · חוק שלך'}
           </p>
           <h1>{article.title}</h1>
-          <p className="a4-lead">{law.definition}</p>
+          <p className="a4-lead"><RichText text={law.definition} /></p>
         </div>
         {image.url && (
           <figure>

@@ -467,6 +467,16 @@ const noSideScroll = async (page, name) => {
   await page.getByRole('button', { name: 'החוקים שלי' }).click();
   await page.waitForSelector('button.row:has-text("נוצר מ:")');
   await shot(page, 'discover-mine');
+
+  // בכתבות: החוק שלך בקבוצה משלו. בלי כתבה יש "ניסוח כתבה", ואחרי הניסוח היא נפתחת, מסומנת, ואפשר להדפיס
+  await page.goto(`${BASE}/articles`);
+  await page.waitForSelector('[aria-label="החוקים שלך"]');
+  await page.getByRole('button', { name: 'ניסוח כתבה' }).click();
+  await page.waitForURL(/law=mine-test/);
+  await page.waitForSelector('[data-col="main"] .marker:has-text("חוק שלך")');
+  await page.waitForSelector('[data-col="main"] .meta:has-text("נוסח בידי AI")');
+  assert.ok(requests.includes('article-save'));
+  await shot(page, 'articles-mine');
 }
 
 await browser.close();
