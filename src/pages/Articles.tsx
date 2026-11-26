@@ -13,6 +13,10 @@ import ArticleSheet from '../components/ArticleSheet';
 import ArticleBody, { parseArticle, type ParsedArticle } from '../components/ArticleBody';
 import type { Law } from '../types';
 import RichText from '../components/RichText';
+import { usePromoted } from '../lib/promoted';
+import { useFinding, saveFinding } from '../lib/findings';
+import { draftArticle } from '../lib/ai';
+import { saveArticle } from '../lib/articles';
 
 interface Entry {
   law: Law;
@@ -27,26 +31,53 @@ export default function Articles() {
   }, []);
 
   const map = useSyncExternalStore(subscribeArticles, getArticlesMap);
+  const promoted = usePromoted();
+  const [drafting, setDrafting] = useState<string | null>(null);
+  const [draftError, setDraftError] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
   const reader = useRef<HTMLElement>(null);
   const [printing, setPrinting] = useState(false);
   const donePrinting = useCallback(() => setPrinting(false), []);
 
-  // רק כתבות של חוקים מהמאגר, בסדר התחומים של הטבלה
-  const groups = useMemo(() => {
+  // רק כתבות של חוקים מהמאגר, בסדר התחומים של הטבלה. החוקים שענת ניסחה בקבוצה משלהם, ראשונה
+  const { mineEntries, groups } = useMemo(() => {
     const entries: Entry[] = [];
     for (const [id, text] of Object.entries(map)) {
       const law = getLawById(id);
       if (law && text.trim()) entries.push({ law, text, article: parseArticle(text) });
     }
-    return ALL_DOMAINS.map((domain) => ({ domain, entries: entries.filter((e) => e.law.domain[0] === domain) }));
-  }, [map]);
+    return {
+      mineEntries: entries.filter((e) => e.law.created_by === 'anat'),
+      groups: ALL_DOMAINS.map((domain) => ({
+        domain,
+        entries: entries.filter((e) => e.law.domain[0] === domain && e.law.created_by !== 'anat'),
+      })),
+    };
+  }, [map, promoted]);
+  // חוקים שלך במאגר שעוד אין להם כתבה: מוצגים עם כפתור לניסוח
+  const mineWithout = promoted.filter((l) => !map[l.id]?.trim());
 
-  const all = groups.flatMap((g) => g.entries);
+  const all = [...mineEntries, ...groups.flatMap((g) => g.entries)];
   const covered = groups.filter((g) => g.entries.length).length;
   const index = Math.max(0, all.findIndex((e) => e.law.id === params.get('law')));
   const open = all[index];
   const next = all.length > 1 ? all[(index + 1) % all.length] : undefined;
+
+  // ניסוח כתבה לחוק שלך מנתוני החוק במאגר. נשמרת מיד, כדי שאפשר יהיה לקרוא ולהדפיס, ומסומנת "נוסח בידי AI"
+  const draftFor = async (law: Law) => {
+    setDrafting(law.id);
+    setDraftError(null);
+    try {
+      const text = await draftArticle(law.id);
+      saveFinding(law.id, 'article_ai', { text });
+      await saveArticle(law.id, text);
+      setParams({ law: law.id });
+    } catch {
+      setDraftError(law.id);
+    } finally {
+      setDrafting(null);
+    }
+  };
 
   const pick = (id: string) => {
     setParams({ law: id });
@@ -76,6 +107,45 @@ export default function Articles() {
         <p className="mt-1 text-sm text-zinc-600">כל כתבה הולכת באותו מסלול: התופעה, המנגנון, ומה זה אומר בעיר.</p>
 
         <div className="scroll-y -mx-1 mt-3 flex-1 px-1">
+          {(mineEntries.length > 0 || mineWithout.length > 0) && (
+            <div className="mb-3 border-b border-zinc-100 pb-2" aria-label="החוקים שלך">
+              <p className="label px-3">החוקים שלך</p>
+              {mineEntries.map(({ law, article }) => (
+                <button
+                  key={law.id}
+                  className="row flex items-center gap-3"
+                  aria-current={law.id === open?.law.id}
+                  onClick={() => pick(law.id)}
+                >
+                  <span className="article-tile bg-yellow-300 text-black" aria-hidden="true">
+                    {SHORT_NAME[law.id] ?? law.name}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block font-bold leading-snug">{article.title}</span>
+                    <span className="meta block">
+                      חוק שלך · {law.name} · <ReadTime minutes={article.minutes} />
+                    </span>
+                  </span>
+                </button>
+              ))}
+              {mineWithout.map((law) => (
+                <div key={law.id} className="flex items-center gap-3 px-3 py-2.5">
+                  <span className="article-tile bg-yellow-100 text-black" aria-hidden="true">
+                    {law.name}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-bold leading-snug">{law.name}</span>
+                    <span className="meta block">
+                      {draftError === law.id ? 'הניסוח לא הצליח עכשיו. נסי שוב בעוד דקה.' : 'חוק שלך · עוד אין כתבה'}
+                    </span>
+                  </span>
+                  <button className="btn-primary btn-sm shrink-0" onClick={() => draftFor(law)} disabled={drafting !== null}>
+                    {drafting === law.id ? 'מנסחת...' : 'ניסוח כתבה'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           {groups.map(({ domain, entries }) =>
             entries.length ? (
               entries.map(({ law, article }) => (
@@ -164,7 +234,9 @@ function Reader({ entry }: { entry: Entry }) {
   const { law, text, article } = entry;
   const image = useLawImage(law.id);
   const domain = law.domain[0];
-  const bySystem = SEED_ARTICLES[law.id]?.trim() === text.trim();
+  const aiDraft = useFinding<{ text: string }>(law.id, 'article_ai');
+  // "נוסח בידי AI": כתבת מערכת, או טיוטה של ה-AI שנשמרה בלי שינוי
+  const bySystem = SEED_ARTICLES[law.id]?.trim() === text.trim() || aiDraft?.text?.trim() === text.trim();
 
   return (
     <article className="rise">
@@ -176,6 +248,7 @@ function Reader({ entry }: { entry: Entry }) {
             <Link to={`/law/${law.id}`} className="font-medium text-zinc-500 underline-offset-4 hover:underline">
               {law.name}
             </Link>
+            {law.created_by === 'anat' && <span className="marker text-xs">חוק שלך</span>}
           </p>
           <h2 className="h1 mt-3">{article.title}</h2>
           <p className="mt-3 max-w-[52ch] text-zinc-600"><RichText text={law.definition} /></p>

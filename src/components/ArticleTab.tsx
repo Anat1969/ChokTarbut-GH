@@ -3,6 +3,7 @@ import { getLawById } from '../data/laws';
 import ArticleSheet from './ArticleSheet';
 import { subscribeArticles, getArticle, saveArticle } from '../lib/articles';
 import { draftArticle } from '../lib/ai';
+import { saveFinding } from '../lib/findings';
 import ArticleBody, { parseArticle } from './ArticleBody';
 import ArticleFindings from './ArticleFindings';
 
@@ -38,7 +39,10 @@ export default function ArticleTab({ lawId, lawName, editable = true }: Props) {
     setDrafting(true);
     setNote('');
     try {
-      setDraft(await draftArticle(lawId));
+      const text = await draftArticle(lawId);
+      setDraft(text);
+      // נרשם מה ה-AI כתב: אם הכתבה תישמר בלי שינוי, היא תסומן "נוסח בידי AI"
+      saveFinding(lawId, 'article_ai', { text });
       setByAi(true);
       setEditing(true);
     } catch {
