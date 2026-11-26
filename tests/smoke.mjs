@@ -46,6 +46,7 @@ const cloud = [];
 // ענן מדומה לתיקים ולחוקים שלי: הטבלאות chok_field_cases ו-chok_my_laws, והפונקציות במסד
 const cloudCases = new Map();
 const cloudLaws = new Map();
+const promotedLaws = [];
 const cloudArticles = new Map();
 const cloudFindings = [];
 
@@ -118,6 +119,17 @@ async function open(viewport) {
   await page.route('**/rest/v1/chok_my_laws*', (route) =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify([...cloudLaws.values()].filter((l) => !l.deleted)) }),
   );
+  // חוקים שהוכנסו למאגר: chok_laws עם created_by=anat, והפונקציה chok_law_promote
+  await page.route('**/rest/v1/chok_laws*', (route) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(promotedLaws) }));
+  await page.route('**/rest/v1/rpc/chok_law_promote', async (route) => {
+    const b = JSON.parse(route.request().postData() ?? '{}');
+    requests.push('law-promote');
+    const l = cloudLaws.get(b.p_id);
+    if (l && !promotedLaws.some((x) => x.id === b.p_id)) {
+      promotedLaws.push({ ...l, evidence_strength: 1, correlations: l.parent_law_ids, source: 'ניסחה ענת. לא אומת.', created_by: 'anat', family: b.p_family });
+    }
+    await route.fulfill({ status: 204, body: '' });
+  });
   await page.route('**/rest/v1/rpc/chok_my_law_*', async (route) => {
     const b = JSON.parse(route.request().postData() ?? '{}');
     if (route.request().url().includes('chok_my_law_save')) {
@@ -433,6 +445,14 @@ const noSideScroll = async (page, name) => {
   await page.waitForURL(/my-laws\?law=mine-test/);
   await page.waitForSelector('#mine-mine-test');
   await shot(page, 'mine-law');
+
+  // הכנסה למאגר: אישור בשני שלבים, ואז החוק מקבל עמוד מלא
+  await page.locator('#mine-mine-test').getByRole('button', { name: 'הכנסה למאגר' }).click();
+  await page.getByRole('button', { name: 'כן, להכניס למאגר' }).click();
+  await page.locator('#mine-mine-test').getByRole('link', { name: 'במאגר: לעמוד החוק' }).click();
+  await page.waitForURL(/\/law\/mine-test/);
+  await page.waitForSelector('h1:has-text("חוק המדרכה הרחבה"), h2:has-text("חוק המדרכה הרחבה")');
+  await shot(page, 'promoted-law');
 }
 
 await browser.close();

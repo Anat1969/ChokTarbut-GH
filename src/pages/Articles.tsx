@@ -12,6 +12,7 @@ import ArticleFindings from '../components/ArticleFindings';
 import ArticleSheet from '../components/ArticleSheet';
 import ArticleBody, { parseArticle, type ParsedArticle } from '../components/ArticleBody';
 import type { Law } from '../types';
+import RichText from '../components/RichText';
 
 interface Entry {
   law: Law;
@@ -177,7 +178,7 @@ function Reader({ entry }: { entry: Entry }) {
             </Link>
           </p>
           <h2 className="h1 mt-3">{article.title}</h2>
-          <p className="mt-3 max-w-[52ch] text-zinc-600">{law.definition}</p>
+          <p className="mt-3 max-w-[52ch] text-zinc-600"><RichText text={law.definition} /></p>
           <p className="meta mt-3">
             <ReadTime minutes={article.minutes} />
             {bySystem && ' · נוסח בידי AI'} · מקור החוק: <bdi>{law.source}</bdi>

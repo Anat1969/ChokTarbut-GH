@@ -20,6 +20,7 @@ export interface Law {
   source: string;
   created_by: 'system' | 'anat';
   tags: string[];
+  family?: string; // רק לחוק שענת הכניסה למאגר. לשאר החוקים: FAMILY_OF
 }
 
 // חוק שענת יצרה, או חוק מהמאגר שהיא סימנה

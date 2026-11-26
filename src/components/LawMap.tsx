@@ -110,7 +110,11 @@ export default function LawMap({ selectedId, highlightIds, domain, onSelect, cla
                 // חוק שענת ניסחה: ריבוע בצהוב־תובנה, עם מסגרת בצבע התחום
                 <rect x={x - r} y={y - r} width={r * 2} height={r * 2} fill={MINE_COLOR} stroke={domainColor(law.domain[0])} strokeWidth={3} />
               ) : (
-                <circle cx={x} cy={y} r={r} fill={domainColor(law.domain[0])} />
+                <>
+                  {/* חוק שענת ניסחה והכניסה למאגר: עיגול רגיל עם טבעת צהוב־תובנה */}
+                  {law.created_by === 'anat' && <circle cx={x} cy={y} r={r + 3} fill={MINE_COLOR} />}
+                  <circle cx={x} cy={y} r={r} fill={domainColor(law.domain[0])} />
+                </>
               )}
               {!mine && law.domain[1] && <circle cx={x} cy={y} r={Math.max(2, r - 4)} fill={domainColor(law.domain[1])} stroke="#fff" strokeWidth={1} />}
               <text

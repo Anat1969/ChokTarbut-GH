@@ -1,7 +1,7 @@
 // שלושת מנועי ה-AI. כל הקריאות עוברות דרך פונקציית Edge (chok-ai),
 // כך שמפתח ה-AI לא מגיע לדפדפן. ההנחיות למודל נמצאות בפונקציה עצמה.
 import { supabase } from './supabase';
-import { INITIAL_LAWS } from '../data/laws';
+import { getLawById } from '../data/laws';
 import type { Law, ExplainResult, CreateLawResult, CorrelationResult } from '../types';
 
 async function call<T>(body: Record<string, unknown>): Promise<T> {
@@ -21,7 +21,7 @@ const brief = (law: Law) => ({
 
 export async function explainPhenomenon(phenomenon: string): Promise<ExplainResult> {
   const res = await call<ExplainResult>({ mode: 'explain', phenomenon });
-  const known = new Set(INITIAL_LAWS.map((l) => l.id));
+  const known = { has: (id: string) => Boolean(getLawById(id)) };
   const ids = (res.matched_law_ids ?? []).filter((id) => known.has(id));
   if (ids.length === 0) throw new Error('לא נמצא חוק מתאים');
   return {
@@ -42,7 +42,7 @@ export function findCorrelations(law: Law): Promise<CorrelationResult> {
     mode: 'correlations',
     law: brief(law),
     known: law.correlations
-      .map((id) => INITIAL_LAWS.find((l) => l.id === id)?.name)
+      .map((id) => getLawById(id)?.name)
       .filter(Boolean),
   });
 }

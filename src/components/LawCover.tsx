@@ -6,6 +6,7 @@ import DomainBadge, { domainColor } from './DomainBadge';
 import Evidence from './Evidence';
 import FamilyGlyph from './FamilyGlyph';
 import type { Law, SavedLaw } from '../types';
+import RichText from './RichText';
 
 interface Props {
   law: Law;
@@ -116,7 +117,7 @@ export default function LawCover({ law, savedLaw: _savedLaw, className = '' }: P
           {effectivePrompt && <p className="cover-lead">{effectivePrompt.idea}</p>}
           <p className="cover-body">
             <span className="cover-kicker">המנגנון{family ? ` · ${family.name}` : ''}</span>
-            {law.mechanism}
+            <RichText text={law.mechanism} />
           </p>
         </div>
         <input
@@ -140,7 +141,7 @@ export default function LawCover({ law, savedLaw: _savedLaw, className = '' }: P
             ))}
             <Evidence value={law.evidence_strength} showLabel />
           </div>
-          <p className="cover-def">{law.definition}</p>
+          <p className="cover-def"><RichText text={law.definition} /></p>
         </div>
         <div className="cover-glyph">
           <FamilyGlyph key={law.id} family={FAMILY_OF[law.id]} color={domainColor(law.domain[0])} animate className="h-full w-full" />
