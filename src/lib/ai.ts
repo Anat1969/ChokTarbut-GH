@@ -80,6 +80,14 @@ export async function draftArticle(lawId: string): Promise<string> {
   return out.text;
 }
 
+// פרומפט ויזואלי ושורת פרשנות לשער, לחוק שאין לו פרומפט מובנה. נתוני החוק נקראים בשרת
+export async function draftPrompt(lawId: string): Promise<{ idea: string; scene: string }> {
+  const out = await plus<{ idea: string; scene: string }>({ mode: 'prompt', law_id: lawId });
+  if (!out.idea?.trim() || !out.scene?.trim()) throw new Error('תשובה ריקה');
+  // שכבה שמסתיימת בנקודה יוצרת ".," בחיבור. מנקים, כדי שהפרומפט ייראה כמו שאר הפרומפטים
+  return { idea: out.idea.trim(), scene: out.scene.trim().replace(/\.\s*,/g, ',').replace(/\.$/, '') };
+}
+
 // ניסוח אוטומטי של חוק משם בלבד
 export function draftLaw(name: string, parents: string[]): Promise<LawDraft> {
   return plus<LawDraft>({ mode: 'draft', name, parents });

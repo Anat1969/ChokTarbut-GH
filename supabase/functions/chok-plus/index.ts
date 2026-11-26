@@ -2,6 +2,7 @@
 //   apps   חוק -> אפליקציות מתיק האפליקציות של ענת שיכולות לאמת אותו, ואיך
 //   draft  שם של חוק -> ניסוח אוטומטי של הגדרה, מנגנון, דוגמה, תחומים ומשפחה
 //   article  מזהה של חוק -> טיוטת כתבה בשלושה פרקים. נתוני החוק נקראים מ-chok_laws, לא מהלקוח
+//   prompt   מזהה של חוק -> פרומפט ויזואלי בחמש שכבות ושורת פרשנות לשער, באותו פורמט של שאר החוקים
 // רשימת האפליקציות נקראת מ-aoa_apps (קריאה ציבורית). כתובות ושמות מוחזרים מהמסד, לא מהמודל.
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -37,6 +38,11 @@ const SCHEMAS = {
     type: 'OBJECT',
     required: ['definition', 'mechanism', 'example', 'domains', 'family'],
     properties: { definition: S, mechanism: S, example: S, domains: { type: 'ARRAY', items: S }, family: S },
+  },
+  prompt: {
+    type: 'OBJECT',
+    required: ['idea', 'tension', 'place', 'material', 'light', 'composition', 'palette'],
+    properties: { idea: S, tension: S, place: S, material: S, light: S, composition: S, palette: S },
   },
   article: {
     type: 'OBJECT',
@@ -235,6 +241,36 @@ ${examples}
         }),
       ].join('\n\n')
       return json({ text, by: 'gemini' })
+    }
+    if (b.mode === 'prompt') {
+      const id = String(b.law_id ?? '')
+      if (!/^[a-z0-9-]{2,60}$/.test(id)) return json({ error: 'חסר חוק' }, 400)
+      const law = await loadLaw(id)
+      if (!law) return json({ error: 'חוק לא קיים' }, 404)
+      const out = await gemini(
+        key,
+        `נתוני החוק מהמאגר:
+<<<שם: ${s(law.name, 80)}
+תחומים: ${(Array.isArray(law.domain) ? law.domain : []).join(', ')}
+הגדרה: ${s(law.definition, 500)}
+מנגנון: ${s(law.mechanism, 500)}>>>
+
+המשימה: פרומפט לתמונה אחת שממחישה את החוק, לצילום אדריכלי תיעודי במידג'רני. הכול בעברית.
+זקק את המנגנון למתח חזותי אחד. לא איור, לא סמל, לא אנשים מפוזרים. מקום אמיתי אחד.
+- idea: הפרשנות הוויזואלית, משפט אחד עד 12 מילים, בלי כוכביות. זה הטקסט שמופיע על השער.
+- tension: רעיון ומתח, מה רואים ומה מתנגש בו. עד 30 מילים.
+- place: מקום וצורה, מקום בעיר ישראלית או במרחב בנוי. עד 20 מילים.
+- material: חומרים ומרקמים. עד 15 מילים.
+- light: אור ושעה. עד 15 מילים.
+- composition: זווית ומיקום המוקד בשלישים. עד 20 מילים.
+- palette: פלטה של שלושה צבעים בשמות. עד 10 מילים, מתחיל ב"פלטה של".
+אסור טקסט, אותיות או שלטים בתמונה.`,
+        SCHEMAS.prompt,
+      )
+      const parts = ['tension', 'place', 'material', 'light', 'composition', 'palette'].map((k) => clean(out[k], 220)).filter(Boolean)
+      const idea = clean(out.idea, 120)
+      if (!idea || parts.length < 5) return json({ error: 'פרומפט לא שלם' }, 502)
+      return json({ idea, scene: parts.join(', '), by: 'gemini' })
     }
     return json({ error: 'mode לא מוכר' }, 400)
   } catch (err) {

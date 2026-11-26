@@ -7,6 +7,8 @@ import Evidence from './Evidence';
 import FamilyGlyph from './FamilyGlyph';
 import type { Law, SavedLaw } from '../types';
 import RichText from './RichText';
+import { draftPrompt } from '../lib/ai';
+import { saveFinding, useFinding } from '../lib/findings';
 
 interface Props {
   law: Law;
@@ -30,11 +32,27 @@ export default function LawCover({ law, savedLaw: _savedLaw, className = '' }: P
   const [confirm, setConfirm] = useState(false);
   const [customPrompt, setCustomPrompt] = useState('');
   const [editingPrompt, setEditingPrompt] = useState(false);
-  const [savedCustomPrompt, setSavedCustomPrompt] = useState('');
+  const [drafting, setDrafting] = useState(false);
+  const [customIdea, setCustomIdea] = useState('');
   const has = Boolean(image.url);
 
-  // פרומפט אפקטיבי: מובנה (מהמערכת) או ידני (ממשתמש)
-  const effectivePrompt = prompt ?? (savedCustomPrompt ? { idea: law.name, scene: savedCustomPrompt } : undefined);
+  // פרומפט אפקטיבי: מובנה (מהמערכת), או שנוסח לחוק ונשמר בענן (ממצא מסוג prompt), ידנית או ב-AI
+  const stored = useFinding<{ idea: string; scene: string; by?: string }>(law.id, 'prompt');
+  const savedCustomPrompt = stored?.scene ?? '';
+  const effectivePrompt = prompt ?? (stored?.scene ? { idea: stored.idea || law.name, scene: stored.scene } : undefined);
+
+  const generate = async () => {
+    setDrafting(true);
+    try {
+      const out = await draftPrompt(law.id);
+      saveFinding(law.id, 'prompt', { ...out, by: 'gemini' });
+      say('הפרומפט ושורת הפרשנות נוסחו ונשמרו. אפשר להעתיק, או לערוך.');
+    } catch {
+      say('הניסוח לא הצליח עכשיו. נסי שוב בעוד דקה, או כתבי בעצמך.', true);
+    } finally {
+      setDrafting(false);
+    }
+  };
 
   const say = (text: string, bad = false) => setNote({ text, bad });
 
@@ -140,6 +158,7 @@ export default function LawCover({ law, savedLaw: _savedLaw, className = '' }: P
               <DomainBadge key={d} domain={d} />
             ))}
             <Evidence value={law.evidence_strength} showLabel />
+            {law.created_by === 'anat' && <span className="marker text-xs font-bold">חוק שלך</span>}
           </div>
           <p className="cover-def"><RichText text={law.definition} /></p>
         </div>
@@ -153,9 +172,14 @@ export default function LawCover({ law, savedLaw: _savedLaw, className = '' }: P
               העתקת הפרומפט
             </button>
           ) : (
-            <button className="cover-btn is-main" onClick={() => setEditingPrompt(true)}>
-              כתבי פרומפט
-            </button>
+            <>
+              <button className="cover-btn is-main" onClick={generate} disabled={drafting}>
+                {drafting ? 'מנסחת...' : 'ניסוח פרומפט וטקסט'}
+              </button>
+              <button className="cover-btn" onClick={() => setEditingPrompt(true)}>
+                כתבי בעצמך
+              </button>
+            </>
           )}
           <button className="cover-btn" onClick={paste} disabled={busy}>
             הדבקת תמונה
@@ -223,6 +247,13 @@ export default function LawCover({ law, savedLaw: _savedLaw, className = '' }: P
           )}
           {!prompt && editingPrompt && (
             <div className="mt-2 flex flex-col gap-1.5">
+              <input
+                className="input text-xs"
+                placeholder="שורת הפרשנות שעל השער, משפט אחד"
+                value={customIdea}
+                onChange={(e) => setCustomIdea(e.target.value)}
+                dir="rtl"
+              />
               <textarea
                 className="w-full rounded border border-zinc-300 p-2 text-xs leading-relaxed"
                 rows={4}
@@ -235,7 +266,7 @@ export default function LawCover({ law, savedLaw: _savedLaw, className = '' }: P
                 <button
                   className="cover-btn is-main"
                   onClick={() => {
-                    setSavedCustomPrompt(customPrompt.trim());
+                    saveFinding(law.id, 'prompt', { idea: customIdea.trim() || law.name, scene: customPrompt.trim(), by: 'anat' });
                     setEditingPrompt(false);
                     say('הפרומפט נשמר. עכשיו אפשר להעתיק ולהשתמש במידג\'רני.');
                   }}
@@ -250,9 +281,22 @@ export default function LawCover({ law, savedLaw: _savedLaw, className = '' }: P
             </div>
           )}
           {!prompt && savedCustomPrompt && !editingPrompt && (
-            <button className="cover-btn mt-1 text-xs" onClick={() => { setCustomPrompt(savedCustomPrompt); setEditingPrompt(true); }}>
-              עריכת הפרומפט
-            </button>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              <button
+                className="cover-btn text-xs"
+                onClick={() => {
+                  setCustomPrompt(savedCustomPrompt);
+                  setCustomIdea(stored?.idea ?? '');
+                  setEditingPrompt(true);
+                }}
+              >
+                עריכת הפרומפט
+              </button>
+              <button className="cover-btn text-xs" onClick={generate} disabled={drafting}>
+                {drafting ? 'מנסחת...' : 'ניסוח מחדש'}
+              </button>
+              {stored?.by === 'gemini' && <span className="meta self-center">נוסח בידי AI</span>}
+            </div>
           )}
         </div>
       </section>

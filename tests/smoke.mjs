@@ -69,6 +69,8 @@ async function open(viewport) {
     const out =
       body.mode === 'apps'
         ? { insight: 'אימות **ברחוב** אמיתי.', picks: [{ id: 'a1', title: 'אפליקציית בדיקה', url: 'https://example.com', proves: 'מראה **דירוג** רחובות.', experiment: 'האם הרחוב המדורג ראשון פעיל גם בערב?' }] }
+        : body.mode === 'prompt'
+          ? { idea: 'מדרכה רחבה שמזמינה עוד הולכי רגל.', scene: 'מדרכה רחבה בצל עצים., רחוב בעיר., אבן משתלבת' }
         : body.mode === 'article'
           ? { text: 'כותרת מה-AI\n\n## התופעה\nשורה.\n\n**תובנה ראשונה.**\n\n## המנגנון\nשורה.\n\n**תובנה שנייה.**\n\n## בעיר\nשורה.\n\n**תובנה שלישית.**' }
         : { definition: 'הגדרה אוטומטית.', mechanism: 'מנגנון אוטומטי.', example: 'דוגמה מהעיר.', domains: ['עיר'], family: 'contagion' };
@@ -452,7 +454,19 @@ const noSideScroll = async (page, name) => {
   await page.locator('#mine-mine-test').getByRole('link', { name: 'במאגר: לעמוד החוק' }).click();
   await page.waitForURL(/\/law\/mine-test/);
   await page.waitForSelector('h1:has-text("חוק המדרכה הרחבה"), h2:has-text("חוק המדרכה הרחבה")');
+  await page.waitForSelector('[data-origin]:has-text("חוק שלך")');
+
+  // ניסוח פרומפט ושורת פרשנות לשער, באותו פורמט של שאר החוקים
+  await page.getByRole('button', { name: 'ניסוח פרומפט וטקסט' }).click();
+  await page.waitForSelector('.cover-lead:has-text("מדרכה רחבה שמזמינה")');
+  assert.ok(requests.includes('prompt'));
   await shot(page, 'promoted-law');
+
+  // בדף "גלה": המיון "החוקים שלי", עם החוקים שמהם נולד
+  await page.goto(`${BASE}/library`);
+  await page.getByRole('button', { name: 'החוקים שלי' }).click();
+  await page.waitForSelector('button.row:has-text("נוצר מ:")');
+  await shot(page, 'discover-mine');
 }
 
 await browser.close();
