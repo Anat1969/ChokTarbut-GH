@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import { syncLaws } from './lib/store';
 import { syncCases } from './lib/cases';
+import { syncPromoted } from './lib/promoted';
 import TopBar from './components/TopBar';
 import Home from './pages/Home';
 import Cover from './pages/Cover';
@@ -30,6 +31,7 @@ export default function App() {
   useEffect(() => {
     syncCases();
     syncLaws();
+    syncPromoted();
   }, []);
 
   // האפליקציה נטענת מיד. הכניסה נבדקת ברקע, ולא חוסמת את המסך.

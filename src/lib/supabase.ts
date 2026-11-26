@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Case, SavedLaw } from '../types';
+import type { Case, Law, SavedLaw } from '../types';
 
 // פרויקט Supabase המשותף של ענת. המפתח כאן הוא המפתח הציבורי (anon), שמותר לו להופיע בדפדפן.
 // כל הטבלאות של האפליקציה נושאות את הקידומת chok_, ומוגנות ב-RLS.
@@ -109,5 +109,23 @@ export async function saveCloudCase(c: Case): Promise<void> {
 
 export async function removeCloudCase(id: string): Promise<void> {
   const { error } = await supabase.rpc('chok_case_remove', { p_id: id });
+  if (error) throw error;
+}
+
+// ---------- ענן: חוקים שענת הכניסה למאגר ----------
+// הכתיבה רק דרך chok_law_promote, שמעתיקה חוק מ"החוקים שלי" אל chok_laws. שום חוק לא נמחק מהמאגר.
+
+export async function fetchPromotedLaws(): Promise<Law[]> {
+  const { data, error } = await supabase
+    .from('chok_laws')
+    .select('id, name, name_en, domain, definition, mechanism, examples, evidence_strength, correlations, source, created_by, tags, family')
+    .eq('created_by', 'anat')
+    .order('updated_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({ ...(row as Law), name_en: row.name_en ?? undefined }));
+}
+
+export async function promoteCloudLaw(id: string, family: string): Promise<void> {
+  const { error } = await supabase.rpc('chok_law_promote', { p_id: id, p_family: family });
   if (error) throw error;
 }

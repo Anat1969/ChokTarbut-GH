@@ -3,10 +3,12 @@ import { getLawById } from '../data/laws';
 import LawPortrait from '../components/LawPortrait';
 import LawMap from '../components/LawMap';
 import LawCover from '../components/LawCover';
+import { usePromoted } from '../lib/promoted';
 
 export default function LawDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  usePromoted(); // חוק שהוכנס למאגר נמצא אחרי הסנכרון עם הענן
   const law = id ? getLawById(id) : undefined;
 
   if (!law) {

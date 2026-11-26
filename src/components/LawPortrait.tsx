@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getLawById } from '../data/laws';
-import { NEIGHBORS } from '../lib/graph';
+import { useGraph } from '../lib/mine';
 import { findCorrelations, findApps, type AppEvidence } from '../lib/ai';
 import LawImage from './LawImage';
 import { saveLaw, removeLaw, isMarked, newId, useSavedLaws } from '../lib/store';
@@ -40,7 +40,8 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
   const savedApps = useFinding<AppEvidence>(law.id, 'apps');
   const linksData = aiState?.data ?? savedLinks;
   const appsData = appsState?.data ?? savedApps;
-  const neighbors = NEIGHBORS[law.id].map(getLawById).filter((l): l is Law => Boolean(l));
+  const { neighbors: NEIGHBORS } = useGraph();
+  const neighbors = (NEIGHBORS[law.id] ?? []).map(getLawById).filter((l): l is Law => Boolean(l));
 
   const family = familyOf(law.id);
   const quote = quoteOf(law.id);
@@ -108,7 +109,7 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
             {law.name_en}
           </p>
         )}
-        <p className={`leading-relaxed ${brief ? 'text-sm' : 'text-lg'}`}>{law.definition}</p>
+        <p className={`leading-relaxed ${brief ? 'text-sm' : 'text-lg'}`}><RichText text={law.definition} /></p>
         </div>
         {brief && (
           <div className="w-24 shrink-0 md:w-44">
@@ -153,7 +154,7 @@ export default function LawPortrait({ law, onSelect, brief = false, afterCover =
           {!brief && !afterCover && (
             <>
           <h3 className="label mb-1 mt-5">המנגנון</h3>
-          <p className="text-sm leading-relaxed text-zinc-700">{law.mechanism}</p>
+          <p className="text-sm leading-relaxed text-zinc-700"><RichText text={law.mechanism} /></p>
 
             </>
           )}

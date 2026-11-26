@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { ALL_DOMAINS, INITIAL_LAWS } from '../data/laws';
+import { ALL_DOMAINS, INITIAL_LAWS, isPromoted } from '../data/laws';
 import { FAMILIES, FAMILY_OF, SHORT_NAME, type FamilyId } from '../data/families';
 import { NEIGHBORS } from '../lib/graph';
 import { useSavedLaws } from '../lib/store';
+import { usePromoted } from '../lib/promoted';
 import { useCases, tally } from '../lib/cases';
 import { domainColor, domainInk } from './DomainBadge';
 import FamilyGlyph from './FamilyGlyph';
@@ -34,7 +35,12 @@ export const EMPTY_CELLS = CELLS.flat().filter((c) => c.length === 0).length;
 export default function PeriodicTable({ selection, hoverId, onHover, onSelect, domain, onDomain, highlightIds }: Props) {
   const saved = useSavedLaws();
   const cases = useCases();
-  const mine = saved.filter((l) => l.kind === 'created' && l.family);
+  const promoted = usePromoted();
+  // חוקים שניסחת: מ"החוקים שלי", ועוד חוקים שהכנסת למאגר גם אם נמחקו מהרשימה
+  const mine: Array<{ id: string; name: string; family?: string; domain: string[] }> = [
+    ...saved.filter((l) => l.kind === 'created' && l.family),
+    ...promoted.filter((p) => p.family && !saved.some((s) => s.id === p.id)),
+  ];
   const focusId = hoverId ?? (selection?.type === 'law' ? selection.id : null);
   const lit = new Set<string>(highlightIds ?? []);
   if (focusId) {
@@ -127,7 +133,12 @@ export default function PeriodicTable({ selection, hoverId, onHover, onSelect, d
                   );
                 })}
                 {own.map((l) => (
-                  <Link key={l.id} to={`/my-laws?law=${l.id}`} className="tile is-mine" title={`${l.name} (חוק שיצרת)`}>
+                  <Link
+                    key={l.id}
+                    to={isPromoted(l.id) ? `/law/${l.id}` : `/my-laws?law=${l.id}`}
+                    className="tile is-mine"
+                    title={`${l.name} (${isPromoted(l.id) ? 'חוק שניסחת, במאגר' : 'חוק שיצרת'})`}
+                  >
                     {l.name}
                   </Link>
                 ))}

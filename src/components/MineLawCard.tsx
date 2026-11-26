@@ -5,6 +5,7 @@ import type { MineLaw } from '../lib/mine';
 import DomainBadge from './DomainBadge';
 import FamilyGlyph from './FamilyGlyph';
 import RichText from './RichText';
+import PromoteButton from './PromoteButton';
 
 // דיוקן של חוק שענת ניסחה: אותו סדר קריאה של חוק מהמאגר, בלי שער תמונה,
 // ועם המקור שלו, החוקים שמהם נולד. מסומן בצהוב־תובנה, ו"לא אומת" במקום ציון ראיות.
@@ -83,9 +84,12 @@ export default function MineLawCard({ law, onSelect }: { law: MineLaw; onSelect?
         </section>
       )}
 
-      <Link to={`/my-laws?law=${law.id}`} className="btn-soft btn-sm mt-6">
-        לחוקים שלי
-      </Link>
+      <div className="mt-6 flex flex-wrap items-start gap-2">
+        <PromoteButton id={law.id} family={law.family} parents={law.parents} />
+        <Link to={`/my-laws?law=${law.id}`} className="btn-soft btn-sm">
+          לחוקים שלי
+        </Link>
+      </div>
     </article>
   );
 }

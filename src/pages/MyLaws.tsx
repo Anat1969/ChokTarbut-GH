@@ -4,6 +4,8 @@ import { getLawById } from '../data/laws';
 import { useSavedLaws, removeLaw, saveLaw } from '../lib/store';
 import DomainBadge from '../components/DomainBadge';
 import RichText from '../components/RichText';
+import PromoteButton from '../components/PromoteButton';
+import { isPromoted } from '../data/laws';
 import type { SavedLaw, User } from '../types';
 
 export default function MyLaws(_props: { user: User | null }) {
@@ -65,8 +67,9 @@ export default function MyLaws(_props: { user: User | null }) {
           ))}
         </p>
       )}
-      <div className="mt-3 flex gap-2">
-        {law.kind === 'created' && (
+      <div className="mt-3 flex flex-wrap items-start gap-2">
+        {law.kind === 'created' && <PromoteButton id={law.id} family={law.family} parents={law.parent_law_ids} />}
+        {law.kind === 'created' && !isPromoted(law.id) && (
           <Link className="btn-soft btn-sm" to={`/library?law=${law.id}`}>
             בספרייה
           </Link>

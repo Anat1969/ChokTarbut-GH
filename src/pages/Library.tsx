@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { INITIAL_LAWS, ALL_DOMAINS, getLawById } from '../data/laws';
 import { useGraph, useMineLaws, isMine, MINE_COLOR, type MineLaw } from '../lib/mine';
+import { usePromoted } from '../lib/promoted';
 import MineLawCard from '../components/MineLawCard';
 import DomainFilter from '../components/DomainFilter';
 import { domainColor } from '../components/DomainBadge';
@@ -34,13 +35,14 @@ export default function Library() {
   const [params] = useSearchParams();
   const [selectedId, setSelectedId] = useState(params.get('law') ?? INITIAL_LAWS[0].id);
   const mine = useMineLaws();
+  const promoted = usePromoted();
   const { neighbors: NEIGHBORS } = useGraph();
   const familyOf = (l: Law) => FAMILY_OF[l.id] ?? (isMine(l) ? l.family : undefined);
   const links = (id: string) => NEIGHBORS[id]?.length ?? 0;
 
   const groups = useMemo(() => {
     const q = query.trim();
-    const laws = [...INITIAL_LAWS, ...mine].filter(
+    const laws = [...INITIAL_LAWS, ...promoted, ...mine].filter(
       (l) =>
         (!domain || l.domain.includes(domain)) &&
         (!q || [l.name, l.name_en ?? '', l.definition, ...l.tags].some((t) => t.toLowerCase().includes(q.toLowerCase()))),
@@ -71,7 +73,7 @@ export default function Library() {
       if (rest.length) out.push({ title: 'פחות מחמישה קשרים', laws: rest });
     }
     return out;
-  }, [domain, sort, query, mine, NEIGHBORS]);
+  }, [domain, sort, query, mine, promoted, NEIGHBORS]);
 
   const count = groups.reduce((n, g) => n + g.laws.length, 0);
   const mineSel: MineLaw | undefined = mine.find((l) => l.id === selectedId);
@@ -99,7 +101,7 @@ export default function Library() {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="חיפוש חוק"
           />
-          <DomainFilter value={domain} onChange={setDomain} extra={mine} />
+          <DomainFilter value={domain} onChange={setDomain} extra={[...promoted, ...mine]} />
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="מיון">
             {SORTS.map((s) => (
               <button
@@ -149,7 +151,7 @@ export default function Library() {
                             style={isMine(l) ? { backgroundColor: MINE_COLOR, boxShadow: `0 0 0 1.5px ${domainColor(l.domain[0])}` } : { backgroundColor: domainColor(l.domain[0]) }}
                           />
                           <span className="text-sm font-bold">{l.name}</span>
-                          {isMine(l) && <span className="marker shrink-0 text-[11px]">ניסחת</span>}
+                          {l.created_by === 'anat' && <span className="marker shrink-0 text-[11px]">ניסחת</span>}
                         </span>
                         <span className="flex shrink-0 items-center gap-2">
                           <span className="meta">{links(l.id)} קשרים</span>

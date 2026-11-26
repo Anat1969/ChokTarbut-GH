@@ -1,9 +1,10 @@
 // חוקים שענת ניסחה, כחוקים לכל דבר: בספרייה, ברשת הקשרים ובטבלה.
 // הם לא נכנסים למאגר עצמו. הם מסומנים בצהוב־תובנה, והקשרים שלהם הם החוקים שמהם נולדו.
 import { useMemo } from 'react';
-import { INITIAL_LAWS, ALL_DOMAINS } from '../data/laws';
+import { INITIAL_LAWS, ALL_DOMAINS, isPromoted } from '../data/laws';
 import { buildGraph, BASE_GRAPH, type Graph } from './graph';
 import { useSavedLaws } from './store';
+import { usePromoted } from './promoted';
 import type { Domain, Law, SavedLaw } from '../types';
 
 export const MINE_COLOR = '#fde047'; // צהוב־תובנה, כמו --insight
@@ -35,15 +36,24 @@ export function toLaw(s: SavedLaw): MineLaw {
   };
 }
 
+// חוקים שניסחה ועוד לא נכנסו למאגר. חוק שנכנס למאגר מגיע מ-usePromoted, כחוק מלא.
 export function useMineLaws(): MineLaw[] {
   const saved = useSavedLaws();
-  return useMemo(() => saved.filter((l) => l.kind === 'created').map(toLaw), [saved]);
+  const promoted = usePromoted();
+  return useMemo(
+    () => saved.filter((l) => l.kind === 'created' && !isPromoted(l.id)).map(toLaw),
+    [saved, promoted],
+  );
 }
 
-export const isMine = (law: Law): law is MineLaw => law.created_by === 'anat';
+export const isMine = (law: Law): law is MineLaw => law.created_by === 'anat' && !isPromoted(law.id);
 
-// הרשת המלאה: המאגר, ועוד החוקים שענת ניסחה. בלי חוקים משלה, זו הרשת הקבועה.
+// הרשת המלאה: המאגר, החוקים שענת הכניסה אליו, והחוקים שניסחה. בלי כל אלה, זו הרשת הקבועה.
 export function useGraph(): Graph {
   const mine = useMineLaws();
-  return useMemo(() => (mine.length ? buildGraph([...INITIAL_LAWS, ...mine]) : BASE_GRAPH), [mine]);
+  const promoted = usePromoted();
+  return useMemo(
+    () => (mine.length || promoted.length ? buildGraph([...INITIAL_LAWS, ...promoted, ...mine]) : BASE_GRAPH),
+    [mine, promoted],
+  );
 }

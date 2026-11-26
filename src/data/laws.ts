@@ -596,8 +596,17 @@ export function getLawsByDomain(domain: Domain): Law[] {
   return INITIAL_LAWS.filter(law => law.domain.includes(domain));
 }
 
+// חוקים שענת ניסחה והכניסה למאגר (chok_laws, created_by='anat'). נרשמים בזמן ריצה מ-src/lib/promoted.ts
+const PROMOTED = new Map<string, Law>();
+export function registerPromoted(laws: Law[]) {
+  PROMOTED.clear();
+  for (const l of laws) if (!INITIAL_LAWS.some((x) => x.id === l.id)) PROMOTED.set(l.id, l);
+}
+export const isPromoted = (id: string) => PROMOTED.has(id);
+export const promotedLaws = (): Law[] => [...PROMOTED.values()];
+
 export function getLawById(id: string): Law | undefined {
-  return INITIAL_LAWS.find(law => law.id === id);
+  return INITIAL_LAWS.find(law => law.id === id) ?? PROMOTED.get(id);
 }
 
 export function getCorrelatedLaws(lawId: string): Law[] {
