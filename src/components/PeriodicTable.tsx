@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { ALL_DOMAINS, INITIAL_LAWS } from '../data/laws';
 import { FAMILIES, FAMILY_OF, SHORT_NAME, type FamilyId } from '../data/families';
 import { NEIGHBORS } from '../lib/graph';
@@ -126,9 +127,9 @@ export default function PeriodicTable({ selection, hoverId, onHover, onSelect, d
                   );
                 })}
                 {own.map((l) => (
-                  <span key={l.id} className="tile is-mine" title={`${l.name} (חוק שיצרת)`}>
+                  <Link key={l.id} to={`/my-laws?law=${l.id}`} className="tile is-mine" title={`${l.name} (חוק שיצרת)`}>
                     {l.name}
-                  </span>
+                  </Link>
                 ))}
                 {laws.length === 0 && own.length === 0 && (
                   <button

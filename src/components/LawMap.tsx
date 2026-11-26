@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { WIDE, NARROW, EDGES, NEIGHBORS, edgePath } from '../lib/graph';
+import { useNavigate } from 'react-router-dom';
+import { edgePath } from '../lib/graph';
+import { useGraph, isMine, MINE_COLOR } from '../lib/mine';
 import { domainColor } from './DomainBadge';
 import type { Domain } from '../types';
 
@@ -15,6 +17,8 @@ interface Props {
 // מפת הקשרים: כל חוק הוא נקודה בצבע התחום הראשי שלו, וכל קו הוא קורלציה.
 export default function LawMap({ selectedId, highlightIds, domain, onSelect, className = '', narrow: forceNarrow = false }: Props) {
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { wide: WIDE, narrow: NARROW, edges: EDGES, neighbors: NEIGHBORS } = useGraph();
   const [narrow, setNarrow] = useState(() => window.matchMedia('(max-width: 767px)').matches);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -30,12 +34,13 @@ export default function LawMap({ selectedId, highlightIds, domain, onSelect, cla
   const lit = new Set<string>();
   if (focusId) {
     lit.add(focusId);
-    NEIGHBORS[focusId].forEach((id) => lit.add(id));
+    (NEIGHBORS[focusId] ?? []).forEach((id) => lit.add(id));
   }
   marked.forEach((id) => lit.add(id));
   const anyFocus = lit.size > 0;
 
   const nodeOn = (id: string) => {
+    if (!NODE_BY_ID[id]) return false;
     const inDomain = !domain || NODE_BY_ID[id].law.domain.includes(domain);
     return inDomain && (!anyFocus || lit.has(id));
   };
@@ -45,6 +50,8 @@ export default function LawMap({ selectedId, highlightIds, domain, onSelect, cla
     if (marked.size > 0) return marked.has(a) && marked.has(b);
     return true;
   };
+
+  const mineCount = layout.nodes.filter((n) => isMine(n.law)).length;
 
   return (
     <svg
@@ -72,6 +79,9 @@ export default function LawMap({ selectedId, highlightIds, domain, onSelect, cla
       <g>
         {layout.nodes.map(({ law, x, y, side, degree }) => {
           const on = nodeOn(law.id);
+          const mine = isMine(law);
+          // חוק שענת ניסחה נפתח בחוקים שלה, כי אין לו עמוד במאגר
+          const open = () => (mine ? navigate(`/my-laws?law=${law.id}`) : onSelect(law.id));
           const isFocus = law.id === focusId || marked.has(law.id);
           const r = 6 + degree;
           return (
@@ -80,23 +90,29 @@ export default function LawMap({ selectedId, highlightIds, domain, onSelect, cla
               className={`map-node ${on ? '' : 'is-dim'} ${isFocus ? 'is-on' : ''}`}
               onMouseEnter={() => setHoverId(law.id)}
               onMouseLeave={() => setHoverId(null)}
-              onClick={() => onSelect(law.id)}
+              onClick={open}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  onSelect(law.id);
+                  open();
                 }
               }}
               tabIndex={0}
               role="button"
-              aria-label={`${law.name}, ${law.domain.join(', ')}, ${degree} קשרים`}
+              aria-label={`${law.name}${mine ? ' (חוק שניסחת)' : ''}, ${law.domain.join(', ')}, ${degree} קשרים`}
+              data-mine={mine || undefined}
               aria-pressed={law.id === selectedId}
             >
               {/* שטח לחיצה רחב, גם על השם */}
               <rect x={side === 'right' ? x - 16 : x - 244} y={y - 14} width={260} height={28} fill="transparent" />
               {isFocus && <circle cx={x} cy={y} r={r + 5} fill="none" stroke="#000" strokeWidth={1.5} />}
-              <circle cx={x} cy={y} r={r} fill={domainColor(law.domain[0])} />
-              {law.domain[1] && <circle cx={x} cy={y} r={Math.max(2, r - 4)} fill={domainColor(law.domain[1])} stroke="#fff" strokeWidth={1} />}
+              {mine ? (
+                // חוק שענת ניסחה: ריבוע בצהוב־תובנה, עם מסגרת בצבע התחום
+                <rect x={x - r} y={y - r} width={r * 2} height={r * 2} fill={MINE_COLOR} stroke={domainColor(law.domain[0])} strokeWidth={3} />
+              ) : (
+                <circle cx={x} cy={y} r={r} fill={domainColor(law.domain[0])} />
+              )}
+              {!mine && law.domain[1] && <circle cx={x} cy={y} r={Math.max(2, r - 4)} fill={domainColor(law.domain[1])} stroke="#fff" strokeWidth={1} />}
               <text
                 className="map-label"
                 x={side === 'right' ? x + r + 9 : x - r - 9}
@@ -109,6 +125,15 @@ export default function LawMap({ selectedId, highlightIds, domain, onSelect, cla
           );
         })}
       </g>
+      {mineCount > 0 && (
+        // מקרא: מופיע רק כשיש ברשת חוקים שענת ניסחה
+        <g aria-hidden="true">
+          <rect x={layout.w - 26} y={layout.h - 26} width={14} height={14} fill={MINE_COLOR} stroke="#000" strokeWidth={1} />
+          <text className="map-label" x={layout.w - 34} y={layout.h - 14} textAnchor="start" style={{ direction: 'rtl' }}>
+            חוק שניסחת ({mineCount})
+          </text>
+        </g>
+      )}
     </svg>
   );
 }

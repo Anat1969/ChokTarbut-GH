@@ -416,5 +416,24 @@ const noSideScroll = async (page, name) => {
   await shot(page, 'explain-fallback');
 }
 
+// ---------- חוק שענת ניסחה: בספרייה, ברשת הקשרים ובחוקים שלי ----------
+{
+  const { page } = await open({ width: 1440, height: 900 });
+  const mine = {
+    id: 'mine-test', kind: 'created', name: 'חוק המדרכה הרחבה', domain: ['עיר'], definition: 'מדרכה רחבה מייצרת **שהייה**.',
+    mechanism: 'משוב חיובי.', examples: [], tags: [], parent_law_ids: ['induced-demand'], family: 'contagion',
+    created_at: '2026-11-26T08:00:00Z', synced: false,
+  };
+  await page.addInitScript((l) => localStorage.setItem('chok-my-laws', JSON.stringify([l])), mine);
+  await page.goto(`${BASE}/library?law=mine-test`);
+  await page.waitForSelector('[data-mine-card="mine-test"]');
+  await page.waitForSelector('button.row:has-text("חוק המדרכה הרחבה")');
+  await page.goto(`${BASE}/law/induced-demand`);
+  await page.locator('[data-mine]').first().click();
+  await page.waitForURL(/my-laws\?law=mine-test/);
+  await page.waitForSelector('#mine-mine-test');
+  await shot(page, 'mine-law');
+}
+
 await browser.close();
 console.log('הבדיקה עברה: כל המסכים, שלושת המנועים, נייד, וגיבוי בלי AI');

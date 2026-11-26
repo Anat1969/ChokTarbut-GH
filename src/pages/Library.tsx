@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { INITIAL_LAWS, ALL_DOMAINS, getLawById } from '../data/laws';
-import { NEIGHBORS } from '../lib/graph';
+import { useGraph, useMineLaws, isMine, MINE_COLOR, type MineLaw } from '../lib/mine';
+import MineLawCard from '../components/MineLawCard';
 import DomainFilter from '../components/DomainFilter';
 import { domainColor } from '../components/DomainBadge';
 import Evidence from '../components/Evidence';
@@ -30,11 +31,16 @@ export default function Library() {
   const [domain, setDomain] = useState<Domain | null>(null);
   const [sort, setSort] = useState<Sort>('family');
   const [query, setQuery] = useState('');
-  const [selectedId, setSelectedId] = useState(INITIAL_LAWS[0].id);
+  const [params] = useSearchParams();
+  const [selectedId, setSelectedId] = useState(params.get('law') ?? INITIAL_LAWS[0].id);
+  const mine = useMineLaws();
+  const { neighbors: NEIGHBORS } = useGraph();
+  const familyOf = (l: Law) => FAMILY_OF[l.id] ?? (isMine(l) ? l.family : undefined);
+  const links = (id: string) => NEIGHBORS[id]?.length ?? 0;
 
   const groups = useMemo(() => {
     const q = query.trim();
-    const laws = INITIAL_LAWS.filter(
+    const laws = [...INITIAL_LAWS, ...mine].filter(
       (l) =>
         (!domain || l.domain.includes(domain)) &&
         (!q || [l.name, l.name_en ?? '', l.definition, ...l.tags].some((t) => t.toLowerCase().includes(q.toLowerCase()))),
@@ -42,9 +48,11 @@ export default function Library() {
     const out: { title: string; note?: string; color?: string; laws: Law[] }[] = [];
     if (sort === 'family') {
       for (const f of FAMILIES) {
-        const list = laws.filter((l) => FAMILY_OF[l.id] === f.id);
+        const list = laws.filter((l) => familyOf(l) === f.id);
         if (list.length) out.push({ title: f.name, note: f.short, laws: list });
       }
+      const loose = laws.filter((l) => !familyOf(l));
+      if (loose.length) out.push({ title: 'חוקים שניסחת, בלי משפחה', note: 'עוד לא שויכו למנגנון', laws: loose });
     } else if (sort === 'domain') {
       for (const d of ALL_DOMAINS) {
         const list = laws.filter((l) => l.domain[0] === d);
@@ -56,21 +64,23 @@ export default function Library() {
         if (list.length) out.push({ title: EVIDENCE_TITLES[v], laws: list });
       }
     } else {
-      const sorted = [...laws].sort((a, b) => NEIGHBORS[b.id].length - NEIGHBORS[a.id].length);
-      const hubs = sorted.filter((l) => NEIGHBORS[l.id].length >= 5);
-      const rest = sorted.filter((l) => NEIGHBORS[l.id].length < 5);
+      const sorted = [...laws].sort((a, b) => links(b.id) - links(a.id));
+      const hubs = sorted.filter((l) => links(l.id) >= 5);
+      const rest = sorted.filter((l) => links(l.id) < 5);
       if (hubs.length) out.push({ title: 'צמתים: חמישה קשרים ויותר', laws: hubs });
       if (rest.length) out.push({ title: 'פחות מחמישה קשרים', laws: rest });
     }
     return out;
-  }, [domain, sort, query]);
+  }, [domain, sort, query, mine, NEIGHBORS]);
 
   const count = groups.reduce((n, g) => n + g.laws.length, 0);
-  const law = getLawById(selectedId)!;
+  const mineSel: MineLaw | undefined = mine.find((l) => l.id === selectedId);
+  const law = mineSel ?? getLawById(selectedId) ?? INITIAL_LAWS[0];
 
   const pick = (id: string) => {
     // במחשב: הדיוקן נפתח במקום, והרשימה נשארת. בנייד: עוברים למסך החוק.
     if (window.matchMedia('(min-width: 768px)').matches) setSelectedId(id);
+    else if (mine.some((l) => l.id === id)) navigate(`/my-laws?law=${id}`);
     else navigate(`/law/${id}`);
   };
 
@@ -89,7 +99,7 @@ export default function Library() {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="חיפוש חוק"
           />
-          <DomainFilter value={domain} onChange={setDomain} />
+          <DomainFilter value={domain} onChange={setDomain} extra={mine} />
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="מיון">
             {SORTS.map((s) => (
               <button
@@ -134,12 +144,16 @@ export default function Library() {
                     <button className="row" aria-current={l.id === selectedId} onClick={() => pick(l.id)}>
                       <span className="flex items-baseline justify-between gap-3">
                         <span className="flex items-baseline gap-2">
-                          <span className="h-2 w-2 shrink-0 self-center" style={{ backgroundColor: domainColor(l.domain[0]) }} />
+                          <span
+                            className="h-2 w-2 shrink-0 self-center"
+                            style={isMine(l) ? { backgroundColor: MINE_COLOR, boxShadow: `0 0 0 1.5px ${domainColor(l.domain[0])}` } : { backgroundColor: domainColor(l.domain[0]) }}
+                          />
                           <span className="text-sm font-bold">{l.name}</span>
+                          {isMine(l) && <span className="marker shrink-0 text-[11px]">ניסחת</span>}
                         </span>
                         <span className="flex shrink-0 items-center gap-2">
-                          <span className="meta">{NEIGHBORS[l.id].length} קשרים</span>
-                          <Evidence value={l.evidence_strength} />
+                          <span className="meta">{links(l.id)} קשרים</span>
+                          {isMine(l) ? <span className="meta">לא אומת</span> : <Evidence value={l.evidence_strength} />}
                         </span>
                       </span>
                       <span className="mt-0.5 line-clamp-1 block pr-4 text-xs text-zinc-500">{l.definition}</span>
@@ -153,10 +167,18 @@ export default function Library() {
       </section>
 
       <section className="scroll-y hidden md:block" style={{ ['--cover-h' as string]: 'min(64vh, 620px)' }}>
-        <LawCover key={law.id} law={law} />
-        <div className="max-w-3xl px-9 py-7">
-          <LawPortrait law={law} onSelect={setSelectedId} afterCover />
-        </div>
+        {mineSel ? (
+          <div className="max-w-3xl px-9 py-7">
+            <MineLawCard law={mineSel} onSelect={setSelectedId} />
+          </div>
+        ) : (
+          <>
+            <LawCover key={law.id} law={law} />
+            <div className="max-w-3xl px-9 py-7">
+              <LawPortrait law={law} onSelect={setSelectedId} afterCover />
+            </div>
+          </>
+        )}
       </section>
     </main>
   );

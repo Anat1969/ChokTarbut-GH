@@ -28,63 +28,76 @@ export interface MapEdge {
 
 const key = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
 
-// קשרים דו־כיווניים: מספיק שחוק אחד מצביע על השני
-export const EDGES: MapEdge[] = (() => {
-  const ids = new Set(INITIAL_LAWS.map((l) => l.id));
+// הרשת נבנית מרשימת חוקים: המאגר, ובנוסף החוקים שענת ניסחה (useGraph ב-mine.ts).
+export interface Graph {
+  edges: MapEdge[];
+  neighbors: Record<string, string[]>;
+  ordered: Law[];
+  wide: MapLayout;
+  narrow: MapLayout;
+}
+
+export function buildGraph(laws: Law[]): Graph {
+  // קשרים דו־כיווניים: מספיק שחוק אחד מצביע על השני
+  const ids = new Set(laws.map((l) => l.id));
   const seen = new Set<string>();
-  const out: MapEdge[] = [];
+  const edges: MapEdge[] = [];
   const pairs: Array<[string, string]> = [
-    ...INITIAL_LAWS.flatMap((law) => law.correlations.map((other): [string, string] => [law.id, other])),
+    ...laws.flatMap((law) => law.correlations.map((other): [string, string] => [law.id, other])),
     ...EXTRA_LINKS,
   ];
-  {
-    for (const [id, other] of pairs) {
-      const law = { id };
-      if (!ids.has(other) || other === law.id) continue;
-      const k = key(law.id, other);
-      if (seen.has(k)) continue;
-      seen.add(k);
-      out.push({ a: law.id, b: other });
-    }
+  for (const [id, other] of pairs) {
+    if (!ids.has(id) || !ids.has(other) || other === id) continue;
+    const k = key(id, other);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    edges.push({ a: id, b: other });
   }
-  return out;
-})();
-
-export const NEIGHBORS: Record<string, string[]> = (() => {
-  const map: Record<string, string[]> = {};
-  for (const law of INITIAL_LAWS) map[law.id] = [];
-  for (const { a, b } of EDGES) {
-    map[a].push(b);
-    map[b].push(a);
+  const neighbors: Record<string, string[]> = {};
+  for (const law of laws) neighbors[law.id] = [];
+  for (const { a, b } of edges) {
+    neighbors[a].push(b);
+    neighbors[b].push(a);
   }
-  return map;
-})();
+  const ordered = [...laws].sort((p, q) => ALL_DOMAINS.indexOf(p.domain[0]) - ALL_DOMAINS.indexOf(q.domain[0]));
+  // שתי פריסות: רחבה למחשב, וצרה וגבוהה לנייד, כדי שהשמות יישארו קריאים
+  const wide = buildLayout(ordered, neighbors, 1000, 860, 262, 400);
+  const narrow = buildLayout(ordered, neighbors, 700, 820, 100, 385);
+  return { edges, neighbors, ordered, wide, narrow };
+}
 
-export const ORDERED: Law[] = [...INITIAL_LAWS].sort(
-  (p, q) => ALL_DOMAINS.indexOf(p.domain[0]) - ALL_DOMAINS.indexOf(q.domain[0]),
-);
-
-function buildLayout(w: number, h: number, rx: number, ry: number): MapLayout {
+function buildLayout(
+  ordered: Law[],
+  neighbors: Record<string, string[]>,
+  w: number,
+  h: number,
+  rx: number,
+  ry: number,
+): MapLayout {
   const cx = w / 2;
   const cy = h / 2;
-  const half = Math.ceil(ORDERED.length / 2);
+  const half = Math.ceil(ordered.length / 2);
   // הקשת הימנית יורדת מלמעלה, והשמאלית עולה מלמטה: התחומים רציפים סביב המעגל
-  const right = ORDERED.slice(0, half);
-  const left = ORDERED.slice(half).reverse();
+  const right = ordered.slice(0, half);
+  const left = ordered.slice(half).reverse();
   const place = (laws: Law[], side: 'right' | 'left'): MapNode[] =>
     laws.map((law, i) => {
       const t = laws.length === 1 ? 0 : (i / (laws.length - 1)) * 2 - 1; // מ־1- עד 1
       const y = cy + t * ry * 0.94;
       const dx = rx * Math.sqrt(Math.max(0, 1 - (t * 0.94) ** 2 * 0.9));
-      return { law, x: side === 'right' ? cx + dx : cx - dx, y, side, degree: NEIGHBORS[law.id].length };
+      return { law, x: side === 'right' ? cx + dx : cx - dx, y, side, degree: neighbors[law.id].length };
     });
   const nodes = [...place(right, 'right'), ...place(left, 'left')];
   return { w, h, rx, ry, nodes, byId: Object.fromEntries(nodes.map((n) => [n.law.id, n])) };
 }
 
-// שתי פריסות: רחבה למחשב, וצרה וגבוהה לנייד, כדי שהשמות יישארו קריאים
-export const WIDE: MapLayout = buildLayout(1000, 860, 262, 400);
-export const NARROW: MapLayout = buildLayout(700, 820, 100, 385);
+// הרשת של המאגר בלבד
+export const BASE_GRAPH = buildGraph(INITIAL_LAWS);
+export const EDGES = BASE_GRAPH.edges;
+export const NEIGHBORS = BASE_GRAPH.neighbors;
+export const ORDERED = BASE_GRAPH.ordered;
+export const WIDE = BASE_GRAPH.wide;
+export const NARROW = BASE_GRAPH.narrow;
 
 // קשת שמתעקלת אל מרכז המפה
 export function edgePath(layout: MapLayout, a: MapNode, b: MapNode): string {
